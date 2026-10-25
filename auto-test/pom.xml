@@ -25,8 +25,6 @@
         <serenity.maven.version>5.3.10</serenity.maven.version>
         <oracle.jdbc.version>23.8.0.25.04</oracle.jdbc.version>
         <commons.exec.version>1.4.0</commons.exec.version>
-        <cucumber.version>7.34.2</cucumber.version>
-        <junit.platform.version>6.0.3</junit.platform.version>
         <tags/>
     </properties>
 
@@ -69,24 +67,6 @@
             <groupId>net.serenity-bdd</groupId>
             <artifactId>serenity-screenplay-rest</artifactId>
             <version>${serenity.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>net.serenity-bdd</groupId>
-            <artifactId>serenity-cucumber</artifactId>
-            <version>${serenity.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.cucumber</groupId>
-            <artifactId>cucumber-junit-platform-engine</artifactId>
-            <version>${cucumber.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.platform</groupId>
-            <artifactId>junit-platform-suite</artifactId>
-            <version>${junit.platform.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>

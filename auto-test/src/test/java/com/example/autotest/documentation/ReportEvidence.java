@@ -1,4 +1,4 @@
-package com.example.autotest.steps.demo;
+package com.example.autotest.documentation;
 
 import net.serenitybdd.annotations.Step;
 import net.serenitybdd.core.Serenity;
@@ -10,7 +10,7 @@ import java.nio.file.Path;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class DemoSteps {
+public class ReportEvidence {
 
     @Step("准备演示场景: {0}")
     public void prepareScenario(String scenario) throws IOException {
