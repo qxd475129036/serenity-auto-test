@@ -1,0 +1,58 @@
+pipeline {
+    agent { label 'maven-builder' }
+
+    options {
+        timestamps()
+        disableConcurrentBuilds()
+    }
+
+    parameters {
+        choice(
+                name: 'PROFILE',
+                choices: ['test', 'staging'],
+                description: 'Maven profile used for the test run')
+        string(
+                name: 'TEST_TAGS',
+                defaultValue: 'smoke',
+                description: 'JUnit tags, for example smoke, negative, or api')
+        booleanParam(
+                name: 'PUBLISH_REPORT',
+                defaultValue: true,
+                description: 'Publish the Serenity HTML report')
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Test & Report') {
+            steps {
+                sh """
+                    ./mvnw clean verify \
+                        -P${params.PROFILE} \
+                        -Dtags="${params.TEST_TAGS}"
+                """
+            }
+        }
+    }
+
+    post {
+        always {
+            script {
+                if (params.PUBLISH_REPORT) {
+                    publishHTML([
+                            allowMissing         : true,
+                            alwaysLinkToLastBuild: true,
+                            keepAll              : true,
+                            reportDir            : 'target/site/serenity',
+                            reportFiles          : 'index.html',
+                            reportName           : 'Serenity 测试报告'
+                    ])
+                }
+            }
+        }
+    }
+}
