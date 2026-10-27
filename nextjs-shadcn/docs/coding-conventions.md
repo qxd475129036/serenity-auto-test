@@ -23,7 +23,7 @@
 - 新增组件: `npx shadcn add <name>`（生成到 `components/ui/`）。
 - 不手工新建 `components/ui/` 下的文件；不手改生成文件的结构（调样式可以，改 API 前先 `--overwrite` 对比官方版本）。
 - 需要定制/封装: 在 `components/{域}/xxx.tsx` 包装 ui 组件并重新导出，页面引用包装层。
-- 组件导出清单见 `.trae/documents/plan-components-demo-page.md` 附录。
+- 组件清单与导出以 `components/ui/*.tsx` 的实际内容为准，不另维护复制清单。
 
 ## 错误处理
 

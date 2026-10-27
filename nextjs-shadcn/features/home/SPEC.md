@@ -1,6 +1,8 @@
-# 功能域: 首页 (/)
+# 首页
 
-- 版本: 0.1 ｜ 状态: 骨架（create-next-app 模板 + demo 入口）
+- 路由: `/`
+- 状态: 骨架（create-next-app 模板 + demo 入口）
+- 版本: 0.1
 
 ## 目标
 
@@ -23,13 +25,19 @@
 
 ## 功能需求
 
+### 正常流程
+
+- 开发者打开首页，看到项目身份、模板说明和页面入口。
 - 保留 create-next-app 模板结构（logo、标题、说明、外部链接）。
 - 按钮区含 "View Components Demo"（Link 包 Button）跳转 `/demo`，这是进入功能页的唯一入口，必须保留。
+
+### 异常与边界
+
 - 无数据请求、无状态、无异步。
 
 ## 验收标准
 
-- `/` 200 渲染，无 console 错误；亮/暗色显示正常。
+- `/` 200 渲染，无 console 错误；默认亮色显示正常。
 - "View Components Demo" 可跳转到 `/demo`。
 - 验证三件套通过（docs/verification.md）。
 

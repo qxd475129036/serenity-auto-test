@@ -58,4 +58,4 @@
 ## 禁令
 
 - 主视觉不用任意色值（裸 hex/rgb），一律走 token 类（如 `bg-primary`、`text-muted-foreground`）。
-- 通用规则不复制进页面级 PAGE.md；页面只写"本页例外"。
+- 通用设计规则不复制进 PAGE.md；PAGE 用元素小节和“展示 / 定义 / 默认 / 交互”字段记录本页行为，Actions 内联维护。

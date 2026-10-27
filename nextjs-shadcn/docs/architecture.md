@@ -34,7 +34,9 @@ docs/                 本套规范文档
 ## 路由与页面约定
 
 - 只用 App Router 文件约定: `page.tsx` / `layout.tsx` / `route.ts` / `error.tsx` / `loading.tsx`。
+- `app/layout.tsx` 统一应用于全部页面（html/body、字体、metadata、TooltipProvider）；当前无路由级 layout，PAGE 不重复记录 layout 继承关系。
 - 新路由 = 新建 `app/{route}/` 目录；页面复杂时同目录加 `PAGE.md`（页面级细则）。
+- PAGE 按页面顺序维护元素小节，每个元素固定记录“展示 / 定义 / 默认 / 交互”；用户 Actions 内联在触发元素下，不维护 DOM/组件树、元素 ID、独立 Actions 表或组件库通用 API。
 - 业务逻辑按功能域组织，规格写 `features/{域}/SPEC.md`；对应 UI 包装组件放 `components/{域}/`。
 
 ## Server / Client Component 策略

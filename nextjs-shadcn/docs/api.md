@@ -26,7 +26,7 @@
 | E_FORBIDDEN | 权限不足 |
 | E_INTERNAL | 服务端内部错误（对外不暴露细节） |
 
-- 鉴权: 基于 Cookie session；引入表单/写操作时定义 CSRF 策略。
+- 鉴权: 认证、session 与 CSRF 方案均未确定；落地前不得假定特定认证实现，确定后在此登记。
 - API 不返回页面跳转逻辑（如 `redirect: true`），跳转决策归前端/调用方。
 
 ## Server Actions 规范（引入时）
