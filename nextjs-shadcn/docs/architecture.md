@@ -51,6 +51,13 @@ docs/                 本套规范文档
 - 不引入全局状态库；当前规模用 `useState`/`useReducer` + props 足够。
 - 未来如引入（zustand 等），先更新本文档与 docs/tech-stack.md，再写代码。
 
+## 认证
+
+- 采用 **Better Auth**（`lib/auth.ts` 服务端 / `lib/auth-client.ts` 客户端），无状态模式：不接数据库，session 存签名 cookie。
+- 用户名/密码通过 `better-auth-credentials-plugin` 转发到第三方认证 API（`THIRD_PARTY_API_URL`，当前为 `/api/mock-third-party`）校验。
+- 全量端点挂载在 `/api/auth/[...all]`；登录页 `/login` 用 `authClient.signIn.credentials` / `authClient.useSession` / `authClient.signOut`。
+- 详见 [features/login/SPEC.md](../features/login/SPEC.md) 与 [docs/api.md](api.md)。
+
 ## 别名
 
 - tsconfig: `@/*` → `./`

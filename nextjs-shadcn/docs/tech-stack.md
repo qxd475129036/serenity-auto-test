@@ -29,6 +29,9 @@
 | cmdk | 1.1.1 | 命令面板（Command 组件） |
 | date-fns | 4.4.0 | 日期处理 |
 | tw-animate-css | 1.4.0 | Tailwind 动画工具类（shadcn 配套） |
+| better-auth | 1.7.x | 认证框架（无状态 cookie session） |
+| better-auth-credentials-plugin | 0.5.x | 用户名/密码凭据转发第三方 API 校验 |
+| zod | 4.x | schema 校验（credentials-plugin peer 依赖） |
 | vaul | 1.1.2 | Drawer 抽屉 |
 | embla-carousel-react | 8.6.0 | Carousel 轮播 |
 | input-otp | 1.5.0 | OTP 输入 |

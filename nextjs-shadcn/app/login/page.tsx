@@ -1,10 +1,10 @@
 "use client"
 
 import Link from "next/link"
-import { useState, type FormEvent } from "react"
+import { useRouter } from "next/navigation"
+import { useState, type SyntheticEvent } from "react"
 import { toast } from "sonner"
-import { ArrowLeftIcon, LockIcon, MailIcon } from "lucide-react"
-
+import { ArrowLeftIcon, LockIcon, LogOutIcon, UserIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -28,19 +28,53 @@ import {
 import { Label } from "@/components/ui/label"
 import { Toaster } from "@/components/ui/sonner"
 
+import { authClient } from "@/lib/auth-client"
+
 export default function LoginPage() {
-  const [email, setEmail] = useState("")
+  const router = useRouter()
+  const { data: session, isPending: sessionPending } = authClient.useSession()
+  const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [remember, setRemember] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
 
-  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: SyntheticEvent<HTMLFormElement>) {
     e.preventDefault()
-    if (!email.trim() || !password) {
-      toast.error("Please enter your email and password.")
+    if (!username.trim() || !password) {
+      toast.error("Please enter your username and password.")
       return
     }
-    toast.success(`Signed in as ${email.trim()} (demo)`)
+
+    setSubmitting(true)
+    try {
+      const result = await authClient.signIn.credentials({
+        username: username.trim(),
+        password,
+        rememberMe: remember,
+      })
+
+      if (result.error) {
+        toast.error(result.error.message || "Sign in failed.")
+        return
+      }
+
+      toast.success(`Signed in as ${result.data?.user?.name ?? username.trim()}`)
+      router.refresh()
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Sign in failed."
+      toast.error(message)
+    } finally {
+      setSubmitting(false)
+    }
   }
+
+  async function handleSignOut() {
+    await authClient.signOut()
+    toast.success("Signed out.")
+    router.refresh()
+  }
+
+  const user = session?.user
 
   return (
     <DirectionProvider dir="ltr">
@@ -52,82 +86,123 @@ export default function LoginPage() {
           </Button>
         </Link>
 
-        <Card className="w-full max-w-sm">
-          <CardHeader>
-            <CardTitle>Sign in to your account</CardTitle>
-            <CardDescription>
-              Enter your credentials to continue.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <FieldGroup>
-                <Field>
-                  <FieldLabel htmlFor="email">Email</FieldLabel>
-                  <FieldGroup>
-                    <InputGroup className="w-full">
-                      <InputGroupAddon>
-                        <MailIcon className="size-4 opacity-50" />
-                      </InputGroupAddon>
-                      <InputGroupInput
-                        id="email"
-                        type="email"
-                        autoComplete="email"
-                        placeholder="you@example.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                      />
-                    </InputGroup>
-                  </FieldGroup>
-                </Field>
-                <Field>
-                  <FieldLabel htmlFor="password">Password</FieldLabel>
-                  <FieldGroup>
-                    <InputGroup className="w-full">
-                      <InputGroupAddon>
-                        <LockIcon className="size-4 opacity-50" />
-                      </InputGroupAddon>
-                      <InputGroupInput
-                        id="password"
-                        type="password"
-                        autoComplete="current-password"
-                        placeholder="••••••••"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                      />
-                    </InputGroup>
-                  </FieldGroup>
-                </Field>
-              </FieldGroup>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id="remember"
-                    checked={remember}
-                    onCheckedChange={(checked) => setRemember(checked === true)}
-                  />
-                  <Label htmlFor="remember" className="text-sm">
-                    Remember me
-                  </Label>
+        {user ? (
+          <Card className="w-full max-w-sm">
+            <CardHeader>
+              <CardTitle>Signed in</CardTitle>
+              <CardDescription>
+                You are authenticated against the mock third-party API.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-1 text-sm">
+                <div className="text-muted-foreground">Username</div>
+                <div className="font-medium">{user.name ?? user.email}</div>
+              </div>
+              <div className="space-y-1 text-sm">
+                <div className="text-muted-foreground">Token</div>
+                <div className="break-all font-mono text-xs">
+                  {user.token ?? "—"}
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={handleSignOut}
+              >
+                <LogOutIcon />
+                Sign out
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="w-full max-w-sm">
+            <CardHeader>
+              <CardTitle>Sign in to your account</CardTitle>
+              <CardDescription>
+                Enter your credentials to continue.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <FieldGroup>
+                  <Field>
+                    <FieldLabel htmlFor="username">Username</FieldLabel>
+                    <FieldGroup>
+                      <InputGroup className="w-full">
+                        <InputGroupAddon>
+                          <UserIcon className="size-4 opacity-50" />
+                        </InputGroupAddon>
+                        <InputGroupInput
+                          id="username"
+                          type="text"
+                          autoComplete="username"
+                          placeholder="username"
+                          value={username}
+                          onChange={(e) => setUsername(e.target.value)}
+                          disabled={submitting || sessionPending}
+                        />
+                      </InputGroup>
+                    </FieldGroup>
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="password">Password</FieldLabel>
+                    <FieldGroup>
+                      <InputGroup className="w-full">
+                        <InputGroupAddon>
+                          <LockIcon className="size-4 opacity-50" />
+                        </InputGroupAddon>
+                        <InputGroupInput
+                          id="password"
+                          type="password"
+                          autoComplete="current-password"
+                          placeholder="••••••••"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          disabled={submitting || sessionPending}
+                        />
+                      </InputGroup>
+                    </FieldGroup>
+                  </Field>
+                </FieldGroup>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="remember"
+                      checked={remember}
+                      onCheckedChange={(checked) => setRemember(checked === true)}
+                      disabled={submitting || sessionPending}
+                    />
+                    <Label htmlFor="remember" className="text-sm">
+                      Remember me
+                    </Label>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="link"
+                    size="sm"
+                    className="h-auto p-0 text-sm"
+                    disabled={submitting || sessionPending}
+                  >
+                    Forgot password?
+                  </Button>
                 </div>
                 <Button
-                  type="button"
-                  variant="link"
-                  size="sm"
-                  className="h-auto p-0 text-sm"
+                  type="submit"
+                  className="w-full"
+                  disabled={submitting || sessionPending}
                 >
-                  Forgot password?
+                  {submitting ? "Signing in..." : "Sign in"}
                 </Button>
-              </div>
-              <Button type="submit" className="w-full">
-                Sign in
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+              </form>
+            </CardContent>
+          </Card>
+        )}
 
         <p className="text-xs text-muted-foreground">
-          Demo only — no backend wired yet.
+          Mock third-party API — try username <code>admin</code> / password{" "}
+          <code>password</code>.
         </p>
       </div>
     </DirectionProvider>
