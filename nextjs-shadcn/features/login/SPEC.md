@@ -2,7 +2,7 @@
 
 - 路由: `/login`
 - 状态: 已接入 Better Auth（用户名/密码转发第三方 API，当前 mock）
-- 版本: 0.2
+- 版本: 0.3
 
 ## 目标
 
@@ -33,7 +33,8 @@
 
 ### 正常流程
 
-- 用户名、密码输入（带前缀图标，Label 关联，autoComplete 语义正确）。
+- UI 语言: 日文（ja），页面根节点 `lang="ja"`；文案以 app/login/PAGE.md 为准。
+- 用户名、密码输入（带前缀图标，Label 关联，autoComplete 语义正确）；密码支持显隐切换。
 - 记住我 Checkbox（作为 `rememberMe` 传给 Better Auth）。
 - 提交时调用 `authClient.signIn.credentials({ username, password, rememberMe })`。
 - 成功: toast 提示，页面刷新后展示已登录态（用户名、token 摘要、Sign out 按钮）。
@@ -76,6 +77,7 @@
 
 - 2026-10: 原 `/demo1` 变体页改为登录页 `/login`。
 - 2026-10: 确定认证方案为 Better Auth + better-auth-credentials-plugin，无状态模式，用户名/密码转发第三方 API（先 mock）。登录字段由 email 改为 username。
+- 2026-11: 登录页 UI/UX 重构：系统定位为日企内部请求系统 "rabbit"，改为左右分栏（左品牌面板 + 右表单），UI 语言日文，新增密码显隐切换；保持单色中性 token 配色（品牌色待定）。
 
 ## 开放问题
 
