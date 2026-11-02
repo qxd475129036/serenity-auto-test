@@ -1,21 +1,17 @@
 "use client"
 
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { useState, type SyntheticEvent } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { Suspense, useEffect, useState, type SyntheticEvent } from "react"
 import { toast } from "sonner"
 import {
-  ArrowLeftIcon,
   EyeIcon,
   EyeOffIcon,
   LockIcon,
-  LogOutIcon,
   RabbitIcon,
   UserIcon,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
 import {
   Card,
   CardContent,
@@ -35,7 +31,6 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from "@/components/ui/input-group"
-import { Label } from "@/components/ui/label"
 import { Spinner } from "@/components/ui/spinner"
 import { Toaster } from "@/components/ui/sonner"
 
@@ -49,6 +44,20 @@ function localizeAuthError(message: string): string {
     return "ユーザー名またはパスワードが正しくありません。"
   }
   return message
+}
+
+/**
+ * 只允许站内路径作为登录后的回跳目标，避免开放重定向与 /login 自跳转。
+ */
+function sanitizeNextPath(raw: string | null): string {
+  if (!raw) return "/"
+  if (!raw.startsWith("/") || raw.startsWith("//") || raw.startsWith("/\\")) {
+    return "/"
+  }
+  if (raw.startsWith("/login") || raw.startsWith("/api")) {
+    return "/"
+  }
+  return raw
 }
 
 function BrandMark({ className }: { className?: string }) {
@@ -65,15 +74,30 @@ function BrandMark({ className }: { className?: string }) {
 }
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginContent />
+    </Suspense>
+  )
+}
+
+function LoginContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const nextPath = sanitizeNextPath(searchParams.get("next"))
   const { data: session, isPending: sessionPending } = authClient.useSession()
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
-  const [remember, setRemember] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
   const disabled = submitting || sessionPending
+
+  useEffect(() => {
+    if (!sessionPending && session) {
+      router.replace(nextPath)
+    }
+  }, [sessionPending, session, nextPath, router])
 
   async function handleSubmit(e: SyntheticEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -87,7 +111,6 @@ export default function LoginPage() {
       const result = await authClient.signIn.credentials({
         username: username.trim(),
         password,
-        rememberMe: remember,
       })
 
       if (result.error) {
@@ -98,7 +121,7 @@ export default function LoginPage() {
       }
 
       toast.success("ログインしました。")
-      router.refresh()
+      router.replace(nextPath)
     } catch (err) {
       const message = err instanceof Error ? err.message : "ログインに失敗しました。"
       toast.error(localizeAuthError(message))
@@ -106,14 +129,6 @@ export default function LoginPage() {
       setSubmitting(false)
     }
   }
-
-  async function handleSignOut() {
-    await authClient.signOut()
-    toast.success("ログアウトしました。")
-    router.refresh()
-  }
-
-  const user = session?.user
 
   return (
     <DirectionProvider dir="ltr">
@@ -144,15 +159,6 @@ export default function LoginPage() {
             {`${SYSTEM_NAME} ${SYSTEM_NAME_JA} - ログイン`}
           </h1>
           <div className="flex items-center gap-2 px-6 pt-5">
-            <Link href="/">
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                aria-label="トップページへ戻る"
-              >
-                <ArrowLeftIcon />
-              </Button>
-            </Link>
             {/* Compact wordmark (mobile / tablet) */}
             <span className="flex items-center gap-2 lg:hidden">
               <RabbitIcon className="size-5" />
@@ -164,155 +170,95 @@ export default function LoginPage() {
 
           <div className="flex flex-1 items-center justify-center px-6 py-10">
             <div className="w-full max-w-sm">
-              {user ? (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>ログイン済み</CardTitle>
-                    <CardDescription>
-                      認証に成功しました。現在のセッション情報を表示しています。
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-1 text-sm">
-                      <div className="text-muted-foreground">ユーザー名</div>
-                      <div className="font-medium">
-                        {user.name ?? user.email}
-                      </div>
-                    </div>
-                    <div className="space-y-1 text-sm">
-                      <div className="text-muted-foreground">Token</div>
-                      <div className="break-all font-mono text-xs">
-                        {user.token ?? "—"}
-                      </div>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full"
-                      onClick={handleSignOut}
-                    >
-                      <LogOutIcon />
-                      ログアウト
-                    </Button>
-                  </CardContent>
-                </Card>
-              ) : (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>ログイン</CardTitle>
-                    <CardDescription>
-                      会社アカウントでサインインしてください。
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                      <Field>
-                        <FieldLabel htmlFor="username">ユーザー名</FieldLabel>
-                        <FieldGroup>
-                          <InputGroup className="w-full">
-                            <InputGroupAddon>
-                              <UserIcon className="size-4 opacity-50" />
-                            </InputGroupAddon>
-                            <InputGroupInput
-                              id="username"
-                              type="text"
-                              autoComplete="username"
-                              placeholder="ユーザー名"
-                              value={username}
-                              onChange={(e) => setUsername(e.target.value)}
-                              disabled={disabled}
-                            />
-                          </InputGroup>
-                        </FieldGroup>
-                      </Field>
-                      <Field>
-                        <FieldLabel htmlFor="password">パスワード</FieldLabel>
-                        <FieldGroup>
-                          <InputGroup className="w-full">
-                            <InputGroupAddon>
-                              <LockIcon className="size-4 opacity-50" />
-                            </InputGroupAddon>
-                            <InputGroupInput
-                              id="password"
-                              type={showPassword ? "text" : "password"}
-                              autoComplete="current-password"
-                              placeholder="パスワード"
-                              value={password}
-                              onChange={(e) => setPassword(e.target.value)}
-                              disabled={disabled}
-                            />
-                            <InputGroupAddon align="inline-end">
-                              <InputGroupButton
-                                type="button"
-                                aria-label={
-                                  showPassword
-                                    ? "パスワードを非表示にする"
-                                    : "パスワードを表示する"
-                                }
-                                aria-pressed={showPassword}
-                                onClick={() => setShowPassword((v) => !v)}
-                                disabled={disabled}
-                              >
-                                {showPassword ? (
-                                  <EyeOffIcon className="size-4" />
-                                ) : (
-                                  <EyeIcon className="size-4" />
-                                )}
-                              </InputGroupButton>
-                            </InputGroupAddon>
-                          </InputGroup>
-                        </FieldGroup>
-                      </Field>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Checkbox
-                            id="remember"
-                            checked={remember}
-                            onCheckedChange={(checked) =>
-                              setRemember(checked === true)
-                            }
+              <Card>
+                <CardHeader>
+                  <CardTitle>ログイン</CardTitle>
+                  <CardDescription>
+                    会社アカウントでサインインしてください。
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <Field>
+                      <FieldLabel htmlFor="username">ユーザー名</FieldLabel>
+                      <FieldGroup>
+                        <InputGroup className="w-full">
+                          <InputGroupAddon>
+                            <UserIcon className="size-4 opacity-50" />
+                          </InputGroupAddon>
+                          <InputGroupInput
+                            id="username"
+                            type="text"
+                            autoComplete="username"
+                            placeholder="ユーザー名"
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
                             disabled={disabled}
                           />
-                          <Label htmlFor="remember" className="text-sm">
-                            ログイン状態を保持
-                          </Label>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="link"
-                          size="sm"
-                          className="h-auto p-0 text-sm"
-                          disabled={disabled}
-                        >
-                          パスワードをお忘れですか？
-                        </Button>
-                      </div>
-                      <Button
-                        type="submit"
-                        size="lg"
-                        className="w-full"
-                        disabled={disabled}
-                      >
-                        {submitting ? (
-                          <>
-                            <Spinner className="size-4" />
-                            ログイン中…
-                          </>
-                        ) : (
-                          "ログイン"
-                        )}
-                      </Button>
-                    </form>
-                  </CardContent>
-                </Card>
-              )}
+                        </InputGroup>
+                      </FieldGroup>
+                    </Field>
+                    <Field>
+                      <FieldLabel htmlFor="password">パスワード</FieldLabel>
+                      <FieldGroup>
+                        <InputGroup className="w-full">
+                          <InputGroupAddon>
+                            <LockIcon className="size-4 opacity-50" />
+                          </InputGroupAddon>
+                          <InputGroupInput
+                            id="password"
+                            type={showPassword ? "text" : "password"}
+                            autoComplete="current-password"
+                            placeholder="パスワード"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            disabled={disabled}
+                          />
+                          <InputGroupAddon align="inline-end">
+                            <InputGroupButton
+                              type="button"
+                              aria-label={
+                                showPassword
+                                  ? "パスワードを非表示にする"
+                                  : "パスワードを表示する"
+                              }
+                              aria-pressed={showPassword}
+                              onClick={() => setShowPassword((v) => !v)}
+                              disabled={disabled}
+                            >
+                              {showPassword ? (
+                                <EyeOffIcon className="size-4" />
+                              ) : (
+                                <EyeIcon className="size-4" />
+                              )}
+                            </InputGroupButton>
+                          </InputGroupAddon>
+                        </InputGroup>
+                      </FieldGroup>
+                    </Field>
+                    <Button
+                      type="submit"
+                      size="lg"
+                      className="w-full"
+                      disabled={disabled}
+                    >
+                      {submitting ? (
+                        <>
+                          <Spinner className="size-4" />
+                          ログイン中…
+                        </>
+                      ) : (
+                        "ログイン"
+                      )}
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
 
-              {!user && (
-                <p className="mt-6 text-center text-xs text-muted-foreground">
-                  テスト用（モーク API）：ユーザー名 <code>admin</code>／パスワード{" "}
-                  <code>password</code>
-                </p>
-              )}
+              <p className="mt-6 text-center text-xs text-muted-foreground">
+                テスト用（モーク API）：ユーザー名 <code>admin</code>／パスワード{" "}
+                <code>password</code>
+              </p>
             </div>
           </div>
         </main>
