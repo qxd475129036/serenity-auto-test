@@ -131,7 +131,7 @@ function LoginContent() {
   }
 
   return (
-    <DirectionProvider dir="ltr">
+    <DirectionProvider direction="ltr">
       <Toaster />
       <div lang="ja" className="flex min-h-dvh bg-background text-foreground">
         {/* Brand panel (desktop) */}

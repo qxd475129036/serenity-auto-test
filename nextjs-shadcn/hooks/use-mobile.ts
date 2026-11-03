@@ -1,20 +1,17 @@
-import { useCallback, useSyncExternalStore } from "react"
+import * as React from "react"
 
 const MOBILE_BREAKPOINT = 768
 
-function isMobileWidth() {
-  return window.innerWidth < MOBILE_BREAKPOINT
+function subscribe(onChange: () => void) {
+  const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`)
+  mql.addEventListener("change", onChange)
+  return () => mql.removeEventListener("change", onChange)
 }
 
 export function useIsMobile() {
-  const subscribe = useCallback(
-    (callback: () => void) => {
-      const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`)
-      mql.addEventListener("change", callback)
-      return () => mql.removeEventListener("change", callback)
-    },
-    []
+  return React.useSyncExternalStore(
+    subscribe,
+    () => window.innerWidth < MOBILE_BREAKPOINT,
+    () => false
   )
-  // useSyncExternalStore 替代 effect + setState，避免级联渲染
-  return useSyncExternalStore(subscribe, isMobileWidth, () => false)
 }

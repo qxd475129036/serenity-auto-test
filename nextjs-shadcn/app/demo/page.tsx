@@ -346,7 +346,7 @@ export default function DemoPage() {
   const [collapsibleOpen, setCollapsibleOpen] = useState(false)
 
   return (
-    <DirectionProvider dir="ltr">
+    <DirectionProvider direction="ltr">
       <Toaster />
       <div className="min-h-screen bg-background text-foreground">
         {/* Header */}
@@ -412,7 +412,7 @@ export default function DemoPage() {
               <Toggle variant="outline" aria-label="Toggle italic">
                 I
               </Toggle>
-              <ToggleGroup type="single">
+              <ToggleGroup>
                 <ToggleGroupItem value="a" aria-label="A">
                   A
                 </ToggleGroupItem>
@@ -436,11 +436,9 @@ export default function DemoPage() {
             </div>
             <div className="flex flex-wrap items-center gap-4">
               <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline">
-                    Dropdown
-                    <ChevronDownIcon />
-                  </Button>
+                <DropdownMenuTrigger render={<Button variant="outline" />}>
+                  Dropdown
+                  <ChevronDownIcon />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
                   <DropdownMenuLabel>My Account</DropdownMenuLabel>
@@ -452,10 +450,12 @@ export default function DemoPage() {
               </DropdownMenu>
 
               <ContextMenu>
-                <ContextMenuTrigger asChild>
-                  <div className="flex h-20 w-full cursor-context-menu items-center justify-center rounded-lg border border-dashed text-sm text-muted-foreground">
-                    Right-click here
-                  </div>
+                <ContextMenuTrigger
+                  render={
+                    <div className="flex h-20 w-full cursor-context-menu items-center justify-center rounded-lg border border-dashed text-sm text-muted-foreground" />
+                  }
+                >
+                  Right-click here
                 </ContextMenuTrigger>
                 <ContextMenuContent>
                   <ContextMenuItem>Copy</ContextMenuItem>
@@ -638,12 +638,7 @@ export default function DemoPage() {
               </TabsContent>
             </Tabs>
             <Separator />
-            <Accordion
-              type="single"
-              collapsible
-              className="w-full"
-              defaultValue="item-1"
-            >
+            <Accordion className="w-full" defaultValue={["item-1"]}>
               <AccordionItem value="item-1">
                 <AccordionTrigger>Is it accessible?</AccordionTrigger>
                 <AccordionContent>
@@ -663,10 +658,8 @@ export default function DemoPage() {
               onOpenChange={setCollapsibleOpen}
               className="w-full"
             >
-              <CollapsibleTrigger asChild>
-                <Button variant="outline" size="sm">
-                  {collapsibleOpen ? "Hide" : "Show"} content
-                </Button>
+              <CollapsibleTrigger render={<Button variant="outline" size="sm" />}>
+                {collapsibleOpen ? "Hide" : "Show"} content
               </CollapsibleTrigger>
               <CollapsibleContent className="mt-2 rounded-md border p-3 text-sm">
                 This is collapsible content.
@@ -815,8 +808,8 @@ export default function DemoPage() {
               </AlertDescription>
             </Alert>
             <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="outline">Open Alert Dialog</Button>
+              <AlertDialogTrigger render={<Button variant="outline" />}>
+                Open Alert Dialog
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
@@ -852,16 +845,16 @@ export default function DemoPage() {
             <div className="flex flex-wrap items-center gap-4">
               <Button onClick={() => toast.success("Success!")}>Toast</Button>
               <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="outline">Hover me</Button>
+                <TooltipTrigger render={<Button variant="outline" />}>
+                  Hover me
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>This is a tooltip</p>
                 </TooltipContent>
               </Tooltip>
               <HoverCard>
-                <HoverCardTrigger asChild>
-                  <Button variant="outline">Hover for card</Button>
+                <HoverCardTrigger render={<Button variant="outline" />}>
+                  Hover for card
                 </HoverCardTrigger>
                 <HoverCardContent>
                   <p className="text-sm">This is a hover card with extra details.</p>
@@ -880,8 +873,8 @@ export default function DemoPage() {
             </div>
             <div className="flex flex-wrap items-center gap-3">
               <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="outline">Open Dialog</Button>
+                <DialogTrigger render={<Button variant="outline" />}>
+                  Open Dialog
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
@@ -896,8 +889,8 @@ export default function DemoPage() {
                 </DialogContent>
               </Dialog>
               <Sheet>
-                <SheetTrigger asChild>
-                  <Button variant="outline">Open Sheet</Button>
+                <SheetTrigger render={<Button variant="outline" />}>
+                  Open Sheet
                 </SheetTrigger>
                 <SheetContent>
                   <SheetHeader>
@@ -909,8 +902,8 @@ export default function DemoPage() {
                 </SheetContent>
               </Sheet>
               <Drawer>
-                <DrawerTrigger asChild>
-                  <Button variant="outline">Open Drawer</Button>
+                <DrawerTrigger render={<Button variant="outline" />}>
+                  Open Drawer
                 </DrawerTrigger>
                 <DrawerContent>
                   <DrawerHeader>
@@ -925,8 +918,8 @@ export default function DemoPage() {
                 </DrawerContent>
               </Drawer>
               <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline">Open Popover</Button>
+                <PopoverTrigger render={<Button variant="outline" />}>
+                  Open Popover
                 </PopoverTrigger>
                 <PopoverContent className="w-72">
                   <p className="text-sm">

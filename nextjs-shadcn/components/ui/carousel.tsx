@@ -95,13 +95,12 @@ function Carousel({
 
   React.useEffect(() => {
     if (!api) return
-    // 首次挂载时一次性同步 embla 外部 API 状态（订阅建立前的初始值，非渲染期推导）
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    onSelect(api)
     api.on("reInit", onSelect)
     api.on("select", onSelect)
+    const frame = requestAnimationFrame(() => onSelect(api))
 
     return () => {
+      cancelAnimationFrame(frame)
       api?.off("select", onSelect)
     }
   }, [api, onSelect])
