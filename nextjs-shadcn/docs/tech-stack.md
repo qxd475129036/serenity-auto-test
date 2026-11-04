@@ -37,6 +37,7 @@
 | input-otp | 1.5.0 | OTP 输入 |
 | react-day-picker | 10.0.1 | Calendar 日历 |
 | react-resizable-panels | 4.12.4 | Resizable 分栏 |
+| @tanstack/react-table | 9.3.1 | Headless 表格内核（v9：features 按需引入；封装见 components/app/use-table.ts） |
 
 ## shadcn 配置（components.json）
 
