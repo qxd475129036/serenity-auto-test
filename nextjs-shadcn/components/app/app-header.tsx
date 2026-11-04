@@ -58,7 +58,7 @@ export function AppHeader() {
       )}
 
       <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur">
-        <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-3 px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto flex h-14 w-[80%] min-w-[1440px] items-center gap-3 px-4 sm:px-6 lg:px-8">
           <Brand />
 
           <nav
@@ -90,6 +90,7 @@ export function AppHeader() {
                           {group.items.map((item) => (
                             <li key={item.title}>
                               <NavigationMenuLink
+                                closeOnClick
                                 render={<Link href={item.href} />}
                                 className="items-start gap-3 p-2.5"
                               >

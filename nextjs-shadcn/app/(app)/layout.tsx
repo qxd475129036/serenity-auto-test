@@ -9,7 +9,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   return (
     <>
       <AppHeader />
-      <main className="flex-1">{children}</main>
+      <main className="mx-auto flex-1 w-[80%] min-w-[1440px] px-4 py-8 sm:px-6 lg:px-8">
+        {children}
+      </main>
     </>
   )
 }

@@ -47,6 +47,19 @@
 - 操作反馈用 sonner toast；触发 toast 的页面必须自行渲染 `<Toaster />`（当前 demo 页各带一个）。
 - 按钮用 `Button` 的 variant/size（default/secondary/ghost/outline/destructive/link；sm/default/lg/icon），不用裸 `<button>` 复刻样式。
 
+## 数据表格（DataTable）
+
+通用表格组件：`components/app/data-table.tsx`。样式规则：
+
+- 正文：`text-sm`
+- 表头高度：固定 `h-10`
+- 单元格内边距：默认 `px-4 py-2`；列较多（叶子列 ≥ 8）时自动切换为 `px-3 py-1`
+- 显式传 `density` 时以其为准：`compact` = `px-3 py-1`、`default` = `px-4 py-2`、`comfortable` = `px-5 py-3`
+- 表头为单行，背景 `bg-muted/40`,
+- 如果明确要用多行表头的情况下,父级分组行可以再降一档到 text-xs，并用更轻的字重（font-normal），这样分组标签就不会和具体列名争夺注意力
+- 高度：滚动区随视口高度自适应（`max-h-[calc(100dvh-16rem)]`，预留导航/页面标题/分页空间），表头吸顶；最少保留 10 行可视高度（`default` ≈ 26rem、`compact` ≈ 21rem、`comfortable` ≈ 31rem），行数超出时内部纵向滚动
+- 容器：`rounded-xl border bg-card shadow-sm`，分页条内嵌卡片底部
+
 ## 可访问性基线
 
 - 交互元素可键盘到达，且焦点环可见（依赖 `--ring`，勿覆盖掉 outline）。

@@ -13,7 +13,6 @@
 | @tailwindcss/postcss | 4.x | PostCSS 插件 |
 | shadcn (CLI) | 4.21.0 | `npx shadcn add <component>` |
 | @shadcn/react | 0.3.1 | |
-| radix-ui | 1.6.7 | 组件原语基底 |
 | @base-ui/react | 1.8.0 | 部分组件基底 |
 
 ## 支撑库

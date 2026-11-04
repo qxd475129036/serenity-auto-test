@@ -25,25 +25,14 @@ const STATUS_MAP: Record<
 }
 
 /**
- * 多行 header —— v9 column group 嵌套：
- * group 的 header 渲染在第一行，子列渲染在第二行（getHeaderGroups 自动展开）。
+ * 单行 header —— 所有列平铺，不再使用 column group 嵌套。
  */
 const columns: ColumnDef<typeof features, Shop, unknown>[] = [
-  {
-    header: "店舗基本情報",
-    columns: [
-      { accessorKey: "code", header: "コード", enableSorting: true },
-      { accessorKey: "name", header: "店舗名", enableSorting: true },
-      { accessorKey: "area", header: "エリア", enableSorting: true },
-    ],
-  },
-  {
-    header: "連絡先",
-    columns: [
-      { accessorKey: "manager", header: "担当者", enableSorting: true },
-      { accessorKey: "phone", header: "TEL", enableSorting: false },
-    ],
-  },
+  { accessorKey: "code", header: "コード", enableSorting: true },
+  { accessorKey: "name", header: "店舗名", enableSorting: true },
+  { accessorKey: "area", header: "エリア", enableSorting: true },
+  { accessorKey: "manager", header: "担当者", enableSorting: true },
+  { accessorKey: "phone", header: "TEL", enableSorting: false },
   {
     accessorKey: "status",
     header: "ステータス",
