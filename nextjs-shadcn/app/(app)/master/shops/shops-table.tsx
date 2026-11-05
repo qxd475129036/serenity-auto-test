@@ -3,7 +3,12 @@
 import type { ColumnDef } from "@tanstack/react-table"
 import { Badge } from "@/components/ui/badge"
 import { DataTable } from "@/components/app/data-table"
-import { useAppTable, features } from "@/components/app/use-table"
+import {
+  useAppTable,
+  features,
+  getPaginationInitialState,
+  type TablePaginationConfig,
+} from "@/components/app/use-table"
 
 /** 店舗マスタ */
 type Shop = {
@@ -78,14 +83,19 @@ const MOCK_SHOPS: Shop[] = [
   { code: "S030", name: "宇都宮駅前店", area: "栃木県", manager: "大谷二十八", phone: "028-111-2222", status: "active" },
 ]
 
-export function ShopsTable() {
+export function ShopsTable({
+  pagination,
+}: {
+  pagination?: TablePaginationConfig
+}) {
   // columns 是模块级常量，引用天然稳定，无需 useMemo
   const table = useAppTable({
     key: "master-shops",
     columns,
     data: MOCK_SHOPS,
-    initialState: { pagination: { pageIndex: 0, pageSize: 10 } },
+    getRowId: (row) => row.code,
+    initialState: { pagination: getPaginationInitialState(pagination) },
   })
 
-  return <DataTable table={table} />
+  return <DataTable table={table} pagination={pagination} />
 }

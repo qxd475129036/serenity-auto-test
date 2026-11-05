@@ -1,8 +1,15 @@
 import type { Metadata } from "next"
+import type { TablePaginationConfig } from "@/components/app/use-table"
 import { ShopsTable } from "./shops-table"
 
 export const metadata: Metadata = {
   title: "店舗管理",
+}
+
+/** 页面级分页配置 */
+const PAGINATION: TablePaginationConfig = {
+  pageSize: 10,
+  pageSizeOptions: [10, 20, 50],
 }
 
 export default function ShopsPage() {
@@ -16,7 +23,7 @@ export default function ShopsPage() {
           請求対象の店舗マスタを管理します。
         </p>
       </header>
-      <ShopsTable />
+      <ShopsTable pagination={PAGINATION} />
     </>
   )
 }

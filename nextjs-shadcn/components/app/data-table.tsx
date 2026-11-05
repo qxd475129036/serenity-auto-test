@@ -25,7 +25,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { FlexRender, flexRender } from "@tanstack/react-table"
 import type { ReactTable, RowData } from "@tanstack/react-table"
+import {
+  DEFAULT_PAGE_SIZE_OPTIONS,
+  type TablePaginationConfig,
+} from "@/components/app/use-table"
 import type { features } from "@/components/app/use-table"
 
 /** 表格密度：仅控制单元格内边距 */
@@ -56,8 +61,10 @@ const MANY_COLUMNS_THRESHOLD = 8
 
 export type DataTableProps<TData extends RowData> = {
   table: ReactTable<typeof features, TData>
-  /** 可选每页行数选项，默认 [10, 20, 50] */
-  pageSizeOptions?: number[]
+  /** 页面级分页配置；默认开启分页、10 件/页 */
+  pagination?: TablePaginationConfig
+  /** 是否显示已选汇总区，默认 false */
+  enableRowSelection?: boolean
   /** 表格密度；未指定时按列数自动选择（≥8 列用 compact） */
   density?: Density
   /** 是否启用斑马纹（隔行变色），默认 false */
@@ -65,20 +72,22 @@ export type DataTableProps<TData extends RowData> = {
   className?: string
 }
 
-const DEFAULT_PAGE_SIZE_OPTIONS = [10, 20, 50]
-
 /**
  * 基于 TanStack Table v9 + shadcn 的通用数据表格组件。
- * 支持：列排序、分页、密度切换、斑马纹。
+ * 支持：列排序、行选择、分页、密度切换、斑马纹。
  */
 export function DataTable<TData extends RowData>({
   table,
-  pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS,
+  pagination: paginationConfig,
+  enableRowSelection = false,
   density,
   striped = false,
   className,
 }: DataTableProps<TData>) {
-  const { pagination } = table.state
+  const pagination = table.state.pagination
+  const paginationEnabled = paginationConfig?.enabled !== false
+  const pageSizeOptions =
+    paginationConfig?.pageSizeOptions ?? DEFAULT_PAGE_SIZE_OPTIONS
   const leafHeaders = table.getLeafHeaders()
   const resolvedDensity: Density =
     density ??
@@ -87,6 +96,7 @@ export function DataTable<TData extends RowData>({
 
   const rowCount = table.getRowCount()
   const pageCount = table.getPageCount()
+  const selectedCount = table.getSelectedRowIds().length
   const rangeStart =
     rowCount === 0 ? 0 : pagination.pageIndex * pagination.pageSize + 1
   const rangeEnd = Math.min(
@@ -167,6 +177,7 @@ export function DataTable<TData extends RowData>({
             table.getRowModel().rows.map((row) => (
               <TableRow
                 key={row.id}
+                data-state={row.getIsSelected() ? "selected" : undefined}
                 className={cn(
                   "border-border/50 transition-colors",
                   striped && "even:bg-muted/25",
@@ -175,9 +186,12 @@ export function DataTable<TData extends RowData>({
                 {row.getAllCells().map((cell) => (
                   <TableCell
                     key={cell.id}
-                    className={cn("text-sm text-foreground/90", cellPadding)}
+                    className={cn(
+                      "text-sm text-foreground/90",
+                      cellPadding,
+                    )}
                   >
-                    {cell.renderValue() as React.ReactNode}
+                    <FlexRender cell={cell} />
                   </TableCell>
                 ))}
               </TableRow>
@@ -186,77 +200,90 @@ export function DataTable<TData extends RowData>({
         </TableBody>
       </Table>
 
-      {/* 分页控制条：内嵌卡片底部，与表格融为一体 */}
-      <div className="flex flex-col gap-3 border-t border-border/60 bg-muted/20 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span className="tabular-nums">
-            {rangeStart}–{rangeEnd} / {rowCount} 件
-          </span>
-          <Select
-            value={String(pagination.pageSize)}
-            onValueChange={(v) => table.setPageSize(Number(v))}
-          >
-            <SelectTrigger size="sm" className="w-auto gap-1">
-              <SelectValue />
-              <span className="text-muted-foreground">件/ページ</span>
-            </SelectTrigger>
-            <SelectContent alignItemWithTrigger={false}>
-              {pageSizeOptions.map((size) => (
-                <SelectItem key={size} value={String(size)}>
-                  {size}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label="前のページ"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            <ChevronLeftIcon />
-          </Button>
-
-          {pageItems(pagination.pageIndex, pageCount).map((item, index) =>
-            item === "ellipsis" ? (
-              <span
-                key={`ellipsis-${index}`}
-                className="px-1 text-xs text-muted-foreground"
-              >
-                …
-              </span>
+      {(paginationEnabled || enableRowSelection) && (
+        <div className="flex flex-col gap-3 border-t border-border/60 bg-muted/20 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            {paginationEnabled ? (
+              <>
+                <span className="tabular-nums">
+                  {rangeStart}–{rangeEnd} / {rowCount} 件
+                </span>
+                <Select
+                  value={String(pagination.pageSize)}
+                  onValueChange={(v) => table.setPageSize(Number(v))}
+                >
+                  <SelectTrigger size="sm" className="w-auto gap-1">
+                    <SelectValue />
+                    <span className="text-muted-foreground">件/ページ</span>
+                  </SelectTrigger>
+                  <SelectContent alignItemWithTrigger={false}>
+                    {pageSizeOptions.map((size) => (
+                      <SelectItem key={size} value={String(size)}>
+                        {size}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </>
             ) : (
-              <Button
-                key={item}
-                variant={item === pagination.pageIndex ? "default" : "ghost"}
-                size="icon-sm"
-                className="tabular-nums"
-                aria-label={`${item + 1} ページ目`}
-                aria-current={
-                  item === pagination.pageIndex ? "page" : undefined
-                }
-                onClick={() => table.setPageIndex(item)}
-              >
-                {item + 1}
-              </Button>
-            ),
-          )}
+              <span className="tabular-nums">全 {rowCount} 件</span>
+            )}
 
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label="次のページ"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            <ChevronRightIcon />
-          </Button>
+            {enableRowSelection && (
+              <span className="tabular-nums">選択中 {selectedCount} 件</span>
+            )}
+          </div>
+
+          {paginationEnabled && (
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label="前のページ"
+                onClick={() => table.previousPage()}
+                disabled={!table.getCanPreviousPage()}
+              >
+                <ChevronLeftIcon />
+              </Button>
+
+              {pageItems(pagination.pageIndex, pageCount).map((item, index) =>
+                item === "ellipsis" ? (
+                  <span
+                    key={`ellipsis-${index}`}
+                    className="px-1 text-xs text-muted-foreground"
+                  >
+                    …
+                  </span>
+                ) : (
+                  <Button
+                    key={item}
+                    variant={item === pagination.pageIndex ? "default" : "ghost"}
+                    size="icon-sm"
+                    className="tabular-nums"
+                    aria-label={`${item + 1} ページ目`}
+                    aria-current={
+                      item === pagination.pageIndex ? "page" : undefined
+                    }
+                    onClick={() => table.setPageIndex(item)}
+                  >
+                    {item + 1}
+                  </Button>
+                ),
+              )}
+
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label="次のページ"
+                onClick={() => table.nextPage()}
+                disabled={!table.getCanNextPage()}
+              >
+                <ChevronRightIcon />
+              </Button>
+            </div>
+          )}
         </div>
-      </div>
+      )}
     </div>
   )
 }
@@ -280,7 +307,7 @@ function pageItems(
   return items
 }
 
-/** 可排序列的 header 渲染：显示文字 + 排序状态图标 */
+/** 可排序列的 header 渲染：显示 header 内容 + 排序状态图标 */
 function SortableHeader<TData extends RowData>({
   header,
 }: {
@@ -301,7 +328,9 @@ function SortableHeader<TData extends RowData>({
 
   return (
     <span className="inline-flex items-center">
-      {header.column.columnDef.header as React.ReactNode}
+      {header.isPlaceholder
+        ? null
+        : flexRender(header.column.columnDef.header, header.getContext())}
       {icon}
     </span>
   )

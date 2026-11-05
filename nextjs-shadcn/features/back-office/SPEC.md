@@ -23,9 +23,9 @@
 |---|---|---|---|
 | 権限（ユーザー）管理 | ユーザー管理 | `/permissions/users` | 占位页 |
 | 権限（ユーザー）管理 | ロール管理 | `/permissions/roles` | 占位页 |
-| マスタ管理 | 店舗管理 | `/master/shops` | 占位页 |
-| マスタ管理 | 請求CD管理 | `/master/billing-codes` | 占位页 |
-| マスタ管理 | 単価管理 | `/master/unit-prices` | 占位页 |
+| マスタ管理 | 店舗管理 | `/master/shops` | 示例（モックデータ） |
+| マスタ管理 | 請求CD管理 | `/master/billing-codes` | 示例（モックデータ） |
+| マスタ管理 | 単価管理 | `/master/unit-prices` | 示例（モックデータ） |
 | 請求業務管理 | 取込状態管理 | `/billing/import-status` | 占位页 |
 | 請求業務管理 | 請求承認管理 | `/billing/approvals` | 占位页 |
 | 請求業務管理 | 調整管理 | `/billing/adjustments` | 占位页 |
@@ -42,8 +42,13 @@
 ### 模块清单
 
 - 单一数据源: `components/app/nav-config.ts` 的 `NAV_GROUPS`。
-- 每项包含 `title`、`description`、`icon`、`href`（必填）；全部模块均有可访问的占位页。
+- 每项包含 `title`、`description`、`icon`、`href`（必填）；全部模块均有可访问的页面。
 - 新增模块：先在 `nav-config.ts` 补数据（含 `href`），再按约定新增路由页面。
+
+### 表格示例页
+
+- master 下三页仅用于展示表格交互示例：店铺页演示排序与分页、請求CD页演示行选择（不分页）、单价页演示分页与每页行数配置。
+- 均为本地 mock 数据，无 CRUD、无 API、无真实业务数据。
 
 ### 占位页规则
 
@@ -57,6 +62,20 @@
 - 全部模块在桌面导航、移动抽屉与工作台卡片中均为可点击链接。
 - 新路由自动受 `proxy.ts` 登录守卫保护。
 
+### 一级模块入口
+
+- 一级模块 URL（`/permissions`、`/master`、`/billing`、`/cod`、`/repayments`、`/statements`）不提供独立页面，
+  统一 `redirect()` 到该组第一个子路由：
+
+| 一级 URL | 目标子页 |
+|---|---|
+| `/permissions` | `/permissions/users` |
+| `/master` | `/master/shops` |
+| `/billing` | `/billing/import-status` |
+| `/cod` | `/cod/placeholder-1` |
+| `/repayments` | `/repayments/placeholder-1` |
+| `/statements` | `/statements/placeholder-1` |
+
 ### 异常与边界
 
 - 未登录访问任一模块路由 → `/login?next=<原路径>`。
@@ -64,7 +83,8 @@
 
 ## 验收标准
 
-- 15 个占位路由均可直接访问（已登录），显示「準備中」，可返回 `/`。
+- 12 个占位路由均可直接访问（已登录），显示「準備中」，可返回 `/`。
+- 3 个 master 路由显示示例表格（排序分页 / 行选择 / 分页配置）。
 - 桌面 6 个下拉分组与移动抽屉的 15 个链接均可跳转；工作台 15 张卡片均可点击。
 - 顶部导航与工作台卡片显示的模块名称、顺序、链接一致。
 - 验证三件套通过（docs/verification.md）。
