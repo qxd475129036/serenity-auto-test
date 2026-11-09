@@ -89,13 +89,6 @@
   - 成功: `toast.success`（「ログインしました。」）并 `router.replace(next)`（无 `next` 时回 `/`）
   - 失败: `toast.error`（`error.message`；"Invalid username or password" 本地化为「ユーザー名またはパスワードが正しくありません。」，其余原文展示）
 
-### Mock 提示
-
-- 展示: `テスト用（モーク API）：ユーザー名 admin／パスワード password`（卡片下方）
-- 定义: 告知当前对接 mock 第三方 API 及测试凭据
-- 默认: `text-xs text-muted-foreground`
-- 交互: 无
-
 ## 响应式
 
 - lg+（≥1024px）: 左右分栏，品牌面板可见，表单区居中。
@@ -107,6 +100,7 @@
 - 无品牌色：品牌视觉走中性 token（`bg-primary` 深色面板 + `text-primary-foreground`），不引入任意色值；品牌色待定（见 docs/design-system.md）。
 - 当前没有主题切换入口，本页不提供主题切换。
 - 登录态由 `authClient.useSession()` 判定；session 加载中（`isPending`）时表单禁用。
+- 登录经 Better Auth 转发到 Spring Boot `POST /login`；Spring 返回的 sessionId 存于 Better Auth 会话（HttpOnly cookie），页面不读写 localStorage / sessionStorage。
 - 路由守卫由根级 `proxy.ts` 实现：未登录访问受保护页面会跳转到 `/login?next=<原路径+query>`；本页从 `next` 读取回跳目标并做站内路径校验，非法值回退 `/`。
 - 已登录用户访问本页会立即 `router.replace(next)`（默认 `/`），不展示登录表单。
 - 日文由系统字体栈回退渲染（Geist 不含日文 web font；设计系统禁止引入其他 web font）。

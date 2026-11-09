@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>首页 · Spring Boot Demo</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body class="page">
+<main class="card card-wide">
+    <header class="home-header">
+        <div>
+            <p class="eyebrow">已登录</p>
+            <h1>欢迎，<span th:text="${username}">admin</span></h1>
+        </div>
+        <form th:action="@{/logout}" method="post">
+            <button type="submit" class="btn-secondary">退出登录</button>
+        </form>
+    </header>
+
+    <section class="api-list">
+        <h2>受保护的 API</h2>
+        <ul>
+            <li>
+                <a th:href="@{/api/hello}" href="/api/hello">GET /api/hello</a>
+                <span class="muted">公开端点</span>
+            </li>
+            <li>
+                <a th:href="@{/api/me}" href="/api/me">GET /api/me</a>
+                <span class="muted">返回当前登录用户</span>
+            </li>
+        </ul>
+        <p class="hint">API 与页面共用同一 <code>JSESSIONID</code> 会话；也可使用 HTTP Basic 访问。</p>
+    </section>
+</main>
+</body>
+</html>

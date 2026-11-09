@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>登录 · Spring Boot Demo</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body class="page">
+<main class="card">
+    <div class="brand">
+        <span class="brand-mark">SB</span>
+        <div>
+            <h1>Spring Boot Demo</h1>
+            <p class="muted">Spring Security + Thymeleaf</p>
+        </div>
+    </div>
+
+    <p class="alert alert-error" th:if="${param.error}">用户名或密码错误</p>
+    <p class="alert alert-info" th:if="${param.logout}">已退出登录</p>
+
+    <form th:action="@{/login}" method="post" class="form">
+        <label class="field">
+            <span>用户名</span>
+            <input type="text" name="username" autocomplete="username" required autofocus>
+        </label>
+        <label class="field">
+            <span>密码</span>
+            <input type="password" name="password" autocomplete="current-password" required>
+        </label>
+        <button type="submit" class="btn-primary">登录</button>
+    </form>
+
+    <p class="hint">默认账号：<code>admin</code> / <code>123456</code></p>
+</main>
+</body>
+</html>

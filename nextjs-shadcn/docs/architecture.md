@@ -100,7 +100,8 @@ page 只需返回内容本身（用 fragment `<>...</>` 包裹多个兄弟节点
 ## 认证
 
 - 采用 **Better Auth**（`lib/auth.ts` 服务端 / `lib/auth-client.ts` 客户端），无状态模式：不接数据库，session 存签名 cookie。
-- 用户名/密码通过 `better-auth-credentials-plugin` 转发到第三方认证 API（`THIRD_PARTY_API_URL`，当前为 `/api/mock-third-party`）校验。
+- 用户名/密码通过 `better-auth-credentials-plugin` 以 `application/x-www-form-urlencoded` 转发到 Spring Boot `POST ${THIRD_PARTY_API_URL}/login` 校验。后端开启 CSRF 时，先 `GET /login` 建立会话并解析页面中的 `_csrf`，再携同会话 cookie 与 `_csrf` POST；认证成功（302 且无 `?error`）后从 `Set-Cookie` 解析 sessionId（cookie 名取 `SPRING_SESSION_COOKIE_NAME`，默认 SESSION）。403 等流程异常一律视为失败，不误判成功。
+- sessionId 双写：存入 Better Auth 会话的 `user.token`，并由 `hooks.after` 在登录成功时种植同名独立 HttpOnly cookie（浏览器 DevTools 可见，JS 不可读）、登出时清除；不写 localStorage / sessionStorage。后续调用 Spring 受保护接口需经 Next 服务端读取后携带 `Cookie: <name>=<id>` 转发。
 - 全量端点挂载在 `/api/auth/[...all]`；登录页 `/login` 用 `authClient.signIn.credentials` / `authClient.useSession` / `authClient.signOut`。
 - 路由守卫由根级 `proxy.ts`（Next.js 16 Proxy，替代 middleware）实现：除 `/login` 与 `/api/**` 外的页面在未登录时重定向 `/login?next=<原路径+query>`，使用 `getSessionCookie` 做乐观判断；登录成功后回 `next`（默认 `/`）。
 - 详见 [features/login/SPEC.md](../features/login/SPEC.md) 与 [docs/api.md](api.md)。

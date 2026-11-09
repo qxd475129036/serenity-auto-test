@@ -255,10 +255,6 @@ function LoginContent() {
                 </CardContent>
               </Card>
 
-              <p className="mt-6 text-center text-xs text-muted-foreground">
-                テスト用（モーク API）：ユーザー名 <code>admin</code>／パスワード{" "}
-                <code>password</code>
-              </p>
             </div>
           </div>
         </main>
