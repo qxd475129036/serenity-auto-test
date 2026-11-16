@@ -1,0 +1,1911 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PRD — 権限（ユーザー）管理</title>
+<style>
+  :root{
+    --ink:#15181d; --ink-2:#2c333d; --muted:#5f6875; --faint:#8b94a1;
+    --line:#e2e6ec; --line-strong:#cbd2dc;
+    --bg:#f4f6f8; --card:#ffffff;
+    --accent:#1f6b58; --accent-2:#2b8a70; --accent-weak:#e9f3ef; --accent-line:#bfdccf;
+    --amber:#9a5b06; --amber-weak:#fdf3e2; --amber-line:#f0d9ae;
+    --red:#a82a1f; --red-weak:#fdeeec; --red-line:#f3c9c4;
+    --blue:#1f4fa8; --blue-weak:#eaf0fb; --blue-line:#c6d6f2;
+    --radius:14px;
+    --shadow:0 1px 2px rgba(16,24,40,.04),0 8px 24px -12px rgba(16,24,40,.12);
+    --font:"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","PingFang SC",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    --mono:"SFMono-Regular",ui-monospace,Menlo,Consolas,"Liberation Mono",monospace;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:var(--font); font-size:14.5px; line-height:1.75;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  code{font-family:var(--mono);font-size:.88em;background:#eef1f4;border:1px solid var(--line);border-radius:5px;padding:1px 5px}
+  .shell{display:grid;grid-template-columns:252px minmax(0,1fr);align-items:start}
+  /* ---------- sidebar ---------- */
+  .sidebar{
+    position:sticky;top:0;height:100vh;overflow:auto;
+    background:#fbfcfd;border-right:1px solid var(--line);
+    padding:22px 16px 32px;
+  }
+  .brand{display:flex;gap:9px;align-items:center;padding:0 8px 16px;margin-bottom:8px;border-bottom:1px solid var(--line)}
+  .brand-mark{width:26px;height:26px;border-radius:8px;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:700;font-size:13px}
+  .brand-text{font-size:13px;font-weight:700;letter-spacing:.02em}
+  .brand-sub{display:block;font-size:10.5px;color:var(--faint);font-weight:500;letter-spacing:.08em}
+  .toc-label{font-size:10.5px;letter-spacing:.12em;color:var(--faint);font-weight:700;margin:14px 8px 6px}
+  .toc a{
+    display:block;padding:6px 10px;border-radius:7px;color:var(--ink-2);
+    font-size:12.8px;line-height:1.5;border-left:2px solid transparent;
+  }
+  .toc a:hover{background:#eef2f5;text-decoration:none}
+  .toc a.sub{padding-left:22px;color:var(--muted);font-size:12.2px}
+  .toc a.active{background:var(--accent-weak);color:var(--accent);border-left-color:var(--accent);font-weight:600}
+  .sidebar-foot{margin-top:18px;padding:12px 10px;border-top:1px solid var(--line);font-size:11px;color:var(--faint);line-height:1.6}
+  /* ---------- content ---------- */
+  main{min-width:0}
+  .doc{max-width:1080px;margin:0 auto;padding:34px 44px 96px}
+  /* cover */
+  .cover{
+    position:relative;overflow:hidden;border:1px solid var(--line);border-radius:18px;
+    background:
+      radial-gradient(1100px 380px at 88% -10%, #e7f1ed 0%, rgba(231,241,237,0) 60%),
+      linear-gradient(180deg,#ffffff 0%,#fbfcfd 100%);
+    padding:34px 36px 28px;box-shadow:var(--shadow);
+  }
+  .cover::after{
+    content:"";position:absolute;right:-60px;top:-70px;width:260px;height:260px;border-radius:50%;
+    border:1px solid #d7e7e0;opacity:.7;
+  }
+  .eyebrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:11.5px;letter-spacing:.1em;color:var(--accent);font-weight:700;text-transform:uppercase}
+  .cover h1{font-size:31px;line-height:1.28;margin:12px 0 8px;letter-spacing:-.01em;font-weight:750}
+  .cover h1 small{display:block;font-size:13px;font-weight:500;color:var(--muted);letter-spacing:.02em;margin-top:8px}
+  .lead{max-width:720px;color:var(--ink-2);margin:10px 0 0;font-size:14.6px}
+  .meta{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-top:24px}
+  .meta div{background:#fff;padding:11px 14px}
+  .meta dt{font-size:10.5px;letter-spacing:.08em;color:var(--faint);font-weight:700;margin:0 0 3px}
+  .meta dd{margin:0;font-size:12.7px;color:var(--ink-2);font-weight:600}
+  .draft-note{
+    display:flex;gap:10px;align-items:flex-start;margin-top:16px;padding:10px 13px;border-radius:10px;
+    background:var(--amber-weak);border:1px solid var(--amber-line);color:#6b4205;font-size:12.6px;
+  }
+  .draft-note strong{color:var(--amber)}
+  /* sections */
+  section{padding-top:46px;scroll-margin-top:18px}
+  .sec-head{display:flex;align-items:baseline;gap:12px;border-top:1px solid var(--line-strong);padding-top:22px;margin-bottom:6px}
+  .sec-no{font-family:var(--mono);font-size:11.5px;color:var(--accent);font-weight:700;letter-spacing:.06em;white-space:nowrap}
+  h2{font-size:22px;margin:0;letter-spacing:-.01em;font-weight:730;line-height:1.4}
+  h3{font-size:16px;margin:28px 0 8px;font-weight:700;letter-spacing:.01em}
+  h4{font-size:13.5px;margin:18px 0 6px;font-weight:700;color:var(--ink-2)}
+  p{margin:8px 0}
+  .muted{color:var(--muted)}
+  .small{font-size:12.5px}
+  ul,ol{margin:8px 0;padding-left:22px}
+  li{margin:4px 0}
+  strong{font-weight:700}
+  /* badges & chips */
+  .chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;border:1px solid transparent;line-height:1.6;vertical-align:middle;white-space:nowrap}
+  .chip.p0{background:var(--accent-weak);color:var(--accent);border-color:var(--accent-line)}
+  .chip.p1{background:#eef1f5;color:#4b5563;border-color:#dde2e9}
+  .chip.tbd{background:var(--amber-weak);color:var(--amber);border-color:var(--amber-line)}
+  .chip.risk{background:var(--red-weak);color:var(--red);border-color:var(--red-line)}
+  .chip.blue{background:var(--blue-weak);color:var(--blue);border-color:var(--blue-line)}
+  .chip.gray{background:#f1f3f6;color:#5b6472;border-color:#e1e5eb}
+  /* panels & callouts */
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;box-shadow:var(--shadow);margin:14px 0}
+  .panel.tight{padding:14px 16px}
+  .grid-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+  .grid-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+  .callout{border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:10px;background:#fff;padding:12px 15px;margin:12px 0;font-size:13.2px}
+  .callout .tag{display:block;font-size:10.5px;font-weight:800;letter-spacing:.1em;margin-bottom:3px;color:var(--accent)}
+  .callout.assume{border-left-color:var(--amber);background:#fffdf8}
+  .callout.assume .tag{color:var(--amber)}
+  .callout.open{border-left-color:var(--red);background:#fffbfa}
+  .callout.open .tag{color:var(--red)}
+  .callout.decision{border-left-color:var(--blue);background:#fafcff}
+  .callout.decision .tag{color:var(--blue)}
+  /* tables */
+  .table-wrap{overflow:auto;border:1px solid var(--line);border-radius:12px;background:#fff;margin:12px 0;box-shadow:var(--shadow)}
+  table{border-collapse:collapse;width:100%;font-size:12.7px}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:#f7f9fa;font-size:11px;letter-spacing:.06em;color:var(--muted);font-weight:800;white-space:nowrap}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr:hover{background:#fbfcfd}
+  td.yes{color:var(--accent);font-weight:800;text-align:center}
+  td.no{color:#aab2bd;text-align:center}
+  td.mid{color:var(--amber);font-weight:700;text-align:center;font-size:11.6px}
+  .num{font-family:var(--mono);font-size:.94em}
+  /* requirement card */
+  .req{background:#fff;border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);margin:16px 0;overflow:hidden;scroll-margin-top:16px}
+  .req-head{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:13px 18px;background:linear-gradient(180deg,#fbfcfd,#f7f9fa);border-bottom:1px solid var(--line)}
+  .req-id{font-family:var(--mono);font-size:11.5px;font-weight:700;color:#fff;background:var(--ink-2);border-radius:6px;padding:2px 7px;letter-spacing:.03em}
+  .req-title{font-size:15px;font-weight:730;margin:0}
+  .req-body{padding:6px 18px 16px}
+  .req-body h4:first-child{margin-top:12px}
+  .kv{display:grid;grid-template-columns:118px minmax(0,1fr);gap:2px 12px;font-size:13px;margin:8px 0}
+  .kv dt{color:var(--muted);font-size:12.2px;font-weight:600;padding-top:1px}
+  .kv dd{margin:0}
+  /* flow diagram */
+  .flow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:12px 0;font-size:12px}
+  .flow-node{border:1px solid var(--line-strong);background:#fff;border-radius:9px;padding:7px 11px;font-weight:600;box-shadow:0 1px 2px rgba(16,24,40,.04)}
+  .flow-node.decision{border-radius:999px;background:#f7f9fa;border-style:dashed;font-weight:600}
+  .flow-node.ok{border-color:var(--accent-line);background:var(--accent-weak);color:var(--accent)}
+  .flow-node.bad{border-color:var(--red-line);background:var(--red-weak);color:var(--red)}
+  .flow-arrow{color:var(--faint);font-weight:700}
+  /* state machine */
+  .states{display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin:14px 0}
+  .state-box{border:1px solid var(--line-strong);border-radius:12px;padding:12px 20px;background:#fff;text-align:center;min-width:132px;box-shadow:var(--shadow)}
+  .state-box b{display:block;font-size:14px}
+  .state-box span{font-size:11px;color:var(--muted)}
+  .state-box.on{border-color:var(--accent-line);background:var(--accent-weak)}
+  .state-box.off{border-color:var(--line-strong);background:#f4f5f7;color:#6b7280}
+  .transition{font-size:11.5px;color:var(--muted);display:flex;flex-direction:column;gap:2px;align-items:center}
+  .transition .line{font-family:var(--mono);color:var(--ink-2);font-weight:700}
+  /* prototype */
+  .proto{border:1px solid var(--line-strong);border-radius:16px;overflow:hidden;background:#fff;box-shadow:0 20px 50px -30px rgba(16,24,40,.35);margin:16px 0}
+  .proto-bar{display:flex;align-items:center;gap:8px;padding:9px 14px;background:#f7f9fa;border-bottom:1px solid var(--line)}
+  .dot{width:9px;height:9px;border-radius:50%;background:#d6dbe2}
+  .proto-url{flex:1;text-align:center;font-family:var(--mono);font-size:11px;color:var(--muted);background:#fff;border:1px solid var(--line);border-radius:6px;padding:2px 8px;margin-left:8px}
+  .proto-tabs{display:flex;gap:2px;padding:10px 14px 0;border-bottom:1px solid var(--line);background:#fff}
+  .proto-tab{border:1px solid transparent;border-bottom:none;background:transparent;font:inherit;font-size:12.6px;font-weight:700;color:var(--muted);padding:8px 14px;border-radius:8px 8px 0 0;cursor:pointer}
+  .proto-tab.active{color:var(--accent);background:#f8fbfa;border-color:var(--line);position:relative;top:1px}
+  .proto-body{padding:16px}
+  .proto-head{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:12px}
+  .proto-head h4{margin:0;font-size:15px}
+  .proto-head p{margin:2px 0 0;font-size:11.8px;color:var(--muted)}
+  .toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:11px}
+  .input,.select{
+    font:inherit;font-size:12.2px;color:var(--ink);background:#fff;border:1px solid var(--line-strong);
+    border-radius:8px;padding:6px 9px;height:32px;outline:none;min-width:0;
+  }
+  .input:focus,.select:focus{border-color:var(--accent-2);box-shadow:0 0 0 3px rgba(43,138,112,.14)}
+  .input.grow{flex:1;min-width:170px}
+  .btn{
+    font:inherit;font-size:12.2px;font-weight:700;border-radius:8px;border:1px solid var(--line-strong);
+    background:#fff;color:var(--ink-2);padding:6px 11px;height:32px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;
+  }
+  .btn:hover{background:#f7f9fa}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .btn.primary:hover{background:#185845}
+  .btn.danger{background:#fff;border-color:var(--red-line);color:var(--red)}
+  .btn.danger:hover{background:var(--red-weak)}
+  .btn.ghost{background:transparent;border-color:transparent}
+  .btn.ghost:hover{background:#eef2f5}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .btn.sm{height:27px;font-size:11.4px;padding:3px 9px}
+  .result-count{font-size:11.6px;color:var(--muted);margin:0 0 8px}
+  .ptable{width:100%;font-size:12.2px}
+  .ptable th{font-size:10.5px;padding:8px 10px;background:#f7f9fa;position:sticky;top:0;z-index:1}
+  .ptable td{padding:8px 10px;border-bottom:1px solid var(--line)}
+  .ptable tr:last-child td{border-bottom:none}
+  .ptable .mono{font-family:var(--mono);font-size:11.4px;color:var(--ink-2)}
+  .status{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:1px 8px;border-radius:999px;border:1px solid transparent}
+  .status::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor}
+  .status.on{color:var(--accent);background:var(--accent-weak);border-color:var(--accent-line)}
+  .status.off{color:#6b7280;background:#f1f3f5;border-color:#e1e5ea}
+  .role-pill{display:inline-block;font-size:10.8px;font-weight:700;padding:1px 7px;border-radius:5px;background:#eef1f5;color:#424b57;border:1px solid #e0e5eb}
+  .empty-box{padding:34px 16px;text-align:center;border:1px dashed var(--line-strong);border-radius:10px;background:#fbfcfd;color:var(--muted);font-size:12.6px}
+  .empty-box b{display:block;color:var(--ink-2);font-size:13.4px;margin-bottom:3px}
+  /* role editor */
+  .role-grid{display:grid;grid-template-columns:250px minmax(0,1fr);gap:14px}
+  .role-list{display:flex;flex-direction:column;gap:6px}
+  .role-item{border:1px solid var(--line);background:#fff;border-radius:9px;padding:9px 11px;cursor:pointer;text-align:left;font:inherit}
+  .role-item:hover{border-color:var(--line-strong);background:#fbfcfd}
+  .role-item.active{border-color:var(--accent-line);background:var(--accent-weak);box-shadow:inset 3px 0 0 var(--accent)}
+  .role-item b{display:block;font-size:12.6px}
+  .role-item span{font-size:10.8px;color:var(--muted)}
+  .role-detail{border:1px solid var(--line);border-radius:10px;padding:14px;background:#fff}
+  .role-detail-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:8px}
+  .role-detail-head h5{margin:0;font-size:14px}
+  .role-detail-head p{margin:2px 0 0;font-size:11.6px;color:var(--muted);max-width:420px}
+  .matrix td{padding:7px 10px;font-size:12px}
+  .matrix th{font-size:10.6px}
+  .matrix th.c,.matrix td.c{text-align:center;width:96px}
+  .matrix tr.locked td{background:#fafbfc;color:#6b7280}
+  .lock-note{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;color:var(--amber);background:var(--amber-weak);border:1px solid var(--amber-line);border-radius:5px;padding:1px 6px;font-weight:700}
+  input[type=checkbox]{accent-color:var(--accent);width:15px;height:15px;cursor:pointer}
+  input[type=checkbox]:disabled{cursor:not-allowed;opacity:.45}
+  .save-bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-top:12px;padding-top:11px;border-top:1px dashed var(--line-strong)}
+  .save-bar .hint{font-size:11.4px;color:var(--muted)}
+  .toast-wrap{position:fixed;right:20px;bottom:20px;display:flex;flex-direction:column;gap:8px;z-index:80;max-width:340px}
+  .toast{background:#1d232b;color:#fff;font-size:12.3px;line-height:1.55;border-radius:10px;padding:10px 13px;box-shadow:0 14px 40px -18px rgba(0,0,0,.5);animation:tin .18s ease-out}
+  .toast.ok{background:#14513f}
+  .toast.err{background:#7c231b}
+  @keyframes tin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  /* modal */
+  .overlay{position:fixed;inset:0;background:rgba(16,24,40,.42);display:none;align-items:center;justify-content:center;padding:20px;z-index:70}
+  .overlay.show{display:flex}
+  .modal{background:#fff;border-radius:14px;width:100%;max-width:520px;box-shadow:0 30px 80px -20px rgba(16,24,40,.55);animation:tin .16s ease-out;max-height:90vh;overflow:auto}
+  .modal-head{padding:16px 20px 0}
+  .modal-head h4{margin:0;font-size:16px}
+  .modal-head p{margin:3px 0 0;font-size:12px;color:var(--muted)}
+  .modal-body{padding:14px 20px}
+  .modal-foot{display:flex;justify-content:flex-end;gap:8px;padding:12px 20px 18px;border-top:1px solid var(--line);margin-top:6px}
+  .field{margin-bottom:11px}
+  .field label{display:block;font-size:11.5px;font-weight:700;color:var(--ink-2);margin-bottom:4px}
+  .field label .req-star{color:var(--red);margin-left:2px}
+  .field .input,.field .select{width:100%;height:34px}
+  .field .help{font-size:10.8px;color:var(--faint);margin-top:3px}
+  .field .err{font-size:10.8px;color:var(--red);margin-top:3px;display:none}
+  .field.invalid .input,.field.invalid .select{border-color:var(--red-line);background:#fffafa}
+  .field.invalid .err{display:block}
+  .field.invalid .help{display:none}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .impact{background:#fbfcfd;border:1px solid var(--line);border-radius:8px;padding:9px 11px;font-size:11.8px;color:var(--ink-2);margin:6px 0 2px}
+  /* misc */
+  .divider{height:1px;background:var(--line);margin:24px 0}
+  .tag-list{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+  .foot{margin-top:56px;border-top:1px solid var(--line-strong);padding-top:16px;font-size:11px;color:var(--faint);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  @media (max-width:1080px){
+    .shell{grid-template-columns:1fr}
+    .sidebar{display:none}
+    .doc{padding:22px 20px 70px}
+    .meta{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .grid-2,.grid-3{grid-template-columns:1fr}
+    .role-grid{grid-template-columns:1fr}
+    .proto-body{padding:12px}
+    .ptable{min-width:720px}
+    .table-wrap.ptable-wrap{overflow:auto}
+  }
+  @media (max-width:560px){
+    .cover{padding:24px 20px}
+    .cover h1{font-size:24px}
+    .form-row{grid-template-columns:1fr}
+  }
+  @media print{
+    body{background:#fff}
+    .shell{display:block}
+    .sidebar,.toolbar,.proto-tabs,.save-bar,.modal-foot{display:none!important}
+    .doc{max-width:none;padding:0}
+    .req,.panel,.proto{box-shadow:none;break-inside:avoid}
+    section{padding-top:24px}
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">R</div>
+      <div class="brand-text">rabbit 請求管理<span class="brand-sub">PRODUCT REQUIREMENTS</span></div>
+    </div>
+    <div class="toc-label">目次</div>
+    <nav class="toc" id="toc">
+      <a href="#overview">0　文档概要</a>
+      <a href="#background">1　背景与目标</a>
+      <a href="#scope">2　范围与边界</a>
+      <a href="#model">3　产品模型</a>
+      <a class="sub" href="#model-terms">3.1　术语与角色</a>
+      <a class="sub" href="#model-matrix">3.2　权限矩阵</a>
+      <a class="sub" href="#model-objects">3.3　对象与字段</a>
+      <a href="#requirements">4　功能需求</a>
+      <a class="sub" href="#fr-01">FR-01　用户列表与检索</a>
+      <a class="sub" href="#fr-02">FR-02　新建用户</a>
+      <a class="sub" href="#fr-03">FR-03　编辑用户</a>
+      <a class="sub" href="#fr-04">FR-04　有效化 / 无效化</a>
+      <a class="sub" href="#fr-05">FR-05　角色列表与详情</a>
+      <a class="sub" href="#fr-06">FR-06　角色权限编辑</a>
+      <a class="sub" href="#fr-07">FR-07　访问控制</a>
+      <a class="sub" href="#fr-08">FR-08　操作审计</a>
+      <a class="sub" href="#fr-09">FR-09　异常与空状态</a>
+      <a href="#rules">5　共通规则</a>
+      <a href="#states">6　状态与流程</a>
+      <a href="#prototype">7　交互原型</a>
+      <a href="#open">8　未决事项与假设</a>
+    </nav>
+    <div class="sidebar-foot">
+      版本 0.1 ・ 草案<br />
+      2026-11-06<br />
+      关联 features/back-office/SPEC.md
+    </div>
+  </aside>
+
+  <main>
+    <div class="doc">
+
+      <header class="cover" id="overview">
+        <div class="eyebrow">PRODUCT REQUIREMENT DOCUMENT ・ 権限（ユーザー）管理</div>
+        <h1>用户与角色权限管理
+          <small>社内ユーザーの登録・編集・無効化と、ロールによる機能権限の割り当て</small>
+        </h1>
+        <p class="lead">
+          为「rabbit 請求管理」后台建立最小可用的访问控制：管理员能在系统内完成人员授权与收回，
+          每个已登录用户只看到、也只能进入其角色允许的业务模块。
+        </p>
+        <dl class="meta">
+          <div><dt>模块路由</dt><dd><code>/permissions/users</code><br /><code>/permissions/roles</code></dd></div>
+          <div><dt>文档状态</dt><dd>草案（待评审）</dd></div>
+          <div><dt>版本 / 日期</dt><dd>v0.1 / 2026-11-06</dd></div>
+          <div><dt>上游依据</dt><dd>features/back-office/SPEC.md</dd></div>
+        </dl>
+        <div class="draft-note">
+          <span>⚠</span>
+          <div><strong>这是草案。</strong>文中标注 <span class="chip tbd">仮</span> 的内容为待确认的产品判断，标注
+            <span class="chip tbd">TBD</span> 的为尚未获得的事实。权限矩阵与角色定义需业务方确认后方可进入实现。</div>
+        </div>
+      </header>
+
+      <section id="background">
+        <div class="sec-head"><span class="sec-no">01</span><h2>背景与目标</h2></div>
+
+        <h3>当前状态</h3>
+        <p>
+          权限管理下的两个页面目前都是「準備中」占位页：<code>/permissions/users</code> 与
+          <code>/permissions/roles</code> 只显示说明与返回按钮，没有任何数据与操作。
+          导航由静态常量驱动，<strong>全部 15 个模块对所有已登录用户可见可进</strong>；
+          路由守卫只判断登录态，不判断角色。
+        </p>
+        <p class="small muted">
+          依据：<code>features/back-office/SPEC.md</code>（占位页规则、无角色判定、风险与依赖）、
+          <code>proxy.ts</code>（仅 <code>getSessionCookie</code> 乐观判断）、
+          <code>components/app/nav-config.ts</code>（静态模块清单）。
+        </p>
+
+        <h3>问题</h3>
+        <ul>
+          <li><strong>授权无处落地。</strong>新员工入职、岗位调整、离职时，管理员无法在系统内授予或收回模块访问权，只能依赖外部约定与人工提醒。</li>
+          <li><strong>越权成本为零。</strong>任何社内账号都能直接打开請求承認、計上、マスタ編集等敏感页面；菜单可见性也不反映职责差异。</li>
+          <li><strong>变更不可追溯。</strong>谁在什么时候给了谁什么权限，没有记录，事后无法复盘。</li>
+        </ul>
+
+        <h3>目标</h3>
+        <p>建立一套最小但完整的 RBAC：<strong>用户台帐 → 角色 → 模块级权限 → 三层一致的访问判定</strong>。完成后应能观察到：</p>
+        <ul>
+          <li>管理员不修改代码、不改配置文件，即可完成「新人授权」「转岗调权」「离职停用」三件事。</li>
+          <li>没有某模块参照权限的用户，在导航、工作台、直接 URL、接口四个入口都拿不到该模块。</li>
+          <li>每一次用户与角色权限的变更都有操作者、时间、变更前后差异与理由可查。</li>
+          <li>误操作可恢复：停用可重新有效化，权限变更可再次编辑回原状，不产生物理删除。</li>
+        </ul>
+
+        <div class="callout decision">
+          <span class="tag">产品判断</span>
+          本模块只管理<strong>授权</strong>，不管理<strong>认证</strong>。密码、MFA、SSO、账号创建与注销仍由外部认证基盘负责；
+          本系统持有的是「谁在本系统里能做什么」的权限台帐。这样与现有无状态认证架构（Better Auth + 第三方认证 API）保持一致，也避免出现两套密码。
+        </div>
+      </section>
+
+      <section id="scope">
+        <div class="sec-head"><span class="sec-no">02</span><h2>范围与边界</h2></div>
+
+        <h3>P0 — 本轮必须完成</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th style="width:64px">编号</th><th>能力</th><th>完成的可见证据</th></tr></thead>
+            <tbody>
+              <tr><td class="num">FR-01</td><td>用户列表、关键词检索、状态与角色筛选、分页</td><td>能按条件找到目标用户，条件保留在 URL</td></tr>
+              <tr><td class="num">FR-02</td><td>新建用户（登录 ID、姓名、邮箱、部门、角色）</td><td>保存后出现在列表首位，状态为「有効」</td></tr>
+              <tr><td class="num">FR-03</td><td>编辑用户资料与角色</td><td>修改后列表即时反映，登录 ID 不可改</td></tr>
+              <tr><td class="num">FR-04</td><td>有效化 / 无效化（含理由与保护规则）</td><td>状态徽标切换，理由记录在审计中</td></tr>
+              <tr><td class="num">FR-05</td><td>角色列表、角色详情、权限矩阵与所属用户</td><td>能看到每个角色能做什么、影响了多少人</td></tr>
+              <tr><td class="num">FR-06</td><td>角色权限编辑（系统管理员角色锁定）</td><td>保存后受影响用户下次请求即按新权限判定</td></tr>
+              <tr><td class="num">FR-07</td><td>导航、路由、接口三层访问控制 + 403 页面</td><td>无权限用户看不到菜单，直接输入 URL 得到 403</td></tr>
+              <tr><td class="num">FR-08</td><td>用户与角色变更的操作审计记录</td><td>每次变更产生一条不可修改的记录</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>P1 — 明确延后</h3>
+        <div class="tag-list">
+          <span class="chip p1">P1 ・ 一人多角色</span>
+          <span class="chip p1">P1 ・ 自定义角色新建 / 删除</span>
+          <span class="chip p1">P1 ・ CSV 批量导入用户</span>
+          <span class="chip p1">P1 ・ 审计日志查看页面与导出</span>
+          <span class="chip p1">P1 ・ 权限变更审批流</span>
+          <span class="chip p1">P1 ・ 密码重置 / 账号解锁入口</span>
+          <span class="chip p1">P1 ・ 按店铺的数据范围权限</span>
+        </div>
+
+        <h3>非目标</h3>
+        <ul>
+          <li>不实现认证本身：不做登录、密码策略、MFA、SSO 配置，也不在本系统创建或删除外部认证账号。</li>
+          <li>不实现组织/部门主数据管理，部门取固定候选值（来源 <span class="chip tbd">TBD</span>）。</li>
+          <li>不做临时授权、有效期、时段限制、IP 限制。</li>
+          <li>不做用户物理删除；离职一律以「無効」表达，保留历史引用。</li>
+          <li>本 PRD 不定义接口路径、数据库结构与实现方案。</li>
+        </ul>
+      </section>
+      <section id="model">
+        <div class="sec-head"><span class="sec-no">03</span><h2>产品模型</h2></div>
+
+        <h3 id="model-terms">3.1　术语与角色</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th style="width:132px">术语</th><th>定义</th></tr></thead>
+            <tbody>
+              <tr><td><strong>ユーザー</strong></td><td>拥有本系统访问权的社内人员。以登录 ID 唯一标识，持有且仅持有一个角色。</td></tr>
+              <tr><td><strong>ロール</strong></td><td>一组模块权限的集合。用户通过角色获得权限，权限不直接挂在用户上。</td></tr>
+              <tr><td><strong>権限</strong></td><td>对某个业务模块的「参照」或「更新」能力。P0 只到模块级，不做字段级或店铺级数据范围。</td></tr>
+              <tr><td><strong>参照</strong></td><td>可以进入模块、查看列表与详情、使用检索与导出（若该模块提供）。不能改变任何数据。</td></tr>
+              <tr><td><strong>更新</strong></td><td>可以执行该模块内的写入操作（新建、编辑、停用、导入、审批等），并隐含参照能力。</td></tr>
+              <tr><td><strong>システムロール</strong></td><td>系统预置、不可删除的角色。其中「システム管理者」连权限也不可编辑，用于防止锁死。</td></tr>
+              <tr><td><strong>操作者</strong></td><td>当前登录并执行操作的用户。所有写操作以操作者身份记录审计。</td></tr>
+              <tr><td><strong>監査ログ</strong></td><td>追加写入、不可修改的操作记录，承载时间、操作者、对象、变更前后与理由。</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>角色定义（仮案，需业务确认）</h3>
+        <p>P0 预置四个系统角色，覆盖后台的典型职责分工。<span class="chip tbd">仮</span> 角色名称、数量与职责边界都需业务方确认后固化。</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th style="width:140px">ロール</th><th style="width:88px">種別</th><th>职责与典型使用者</th><th style="width:200px">关键边界</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><strong>システム管理者</strong></td><td><span class="chip gray">システム</span></td>
+                <td>系统导入与运维负责人；管理用户、角色与全部业务模块。</td>
+                <td>唯一可以进入权限管理的角色；权限不可编辑，防止误操作锁死。</td>
+              </tr>
+              <tr>
+                <td><strong>マスタ管理者</strong></td><td><span class="chip gray">システム</span></td>
+                <td>负责店铺、請求 CD、单价等主数据的维护人员。</td>
+                <td>可更新マスタ管理；对請求业务只读；看不到权限管理。</td>
+              </tr>
+              <tr>
+                <td><strong>請求担当</strong></td><td><span class="chip gray">システム</span></td>
+                <td>日常請求处理人员：取込、承認、調整、計上。</td>
+                <td>可更新請求業務管理；マスタ只读，避免业务人员改主数据。</td>
+              </tr>
+              <tr>
+                <td><strong>閲覧者</strong></td><td><span class="chip gray">システム</span></td>
+                <td>管理层、审计或临时需要查看数据的人员。</td>
+                <td>所有业务模块只读；无任何更新能力；看不到权限管理。</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3 id="model-matrix">3.2　权限矩阵</h3>
+        <p>
+          下表是权限判定的<strong>唯一真相源</strong>。任何页面、导航、接口的判定都必须回到这张矩阵，不得在别处另立规则。
+          单元格含义：<span class="chip p0">更新可</span> 表示该模块参照 + 更新；「参照のみ」表示只读；「—」表示完全不可见、不可进入。
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>模块</th>
+                <th style="width:130px" class="c">システム管理者</th>
+                <th style="width:130px" class="c">マスタ管理者</th>
+                <th style="width:130px" class="c">請求担当</th>
+                <th style="width:130px" class="c">閲覧者</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>権限（ユーザー）管理</td><td class="yes">更新可</td><td class="no">—</td><td class="no">—</td><td class="no">—</td></tr>
+              <tr><td>マスタ管理</td><td class="yes">更新可</td><td class="yes">更新可</td><td class="mid">参照のみ</td><td class="mid">参照のみ</td></tr>
+              <tr><td>請求業務管理</td><td class="yes">更新可</td><td class="mid">参照のみ</td><td class="yes">更新可</td><td class="mid">参照のみ</td></tr>
+              <tr><td>代引業務管理</td><td class="yes">更新可</td><td class="mid">参照のみ</td><td class="mid">参照のみ</td><td class="mid">参照のみ</td></tr>
+              <tr><td>弁済業務管理</td><td class="yes">更新可</td><td class="mid">参照のみ</td><td class="mid">参照のみ</td><td class="mid">参照のみ</td></tr>
+              <tr><td>明細ダウンロード</td><td class="yes">更新可</td><td class="mid">参照のみ</td><td class="mid">参照のみ</td><td class="mid">参照のみ</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout assume">
+          <span class="tag">仮定 / TBD</span>
+          上表的具体取值是<strong>提案</strong>，不是已确认的业务规则。需要确认的三点：<br />
+          1）「マスタ管理者」是否应具备請求参照权限；2）「請求担当」是否需要更新代引/弁済；<br />
+          3）是否需要第五个角色（如只管理导入的「取込担当」）。确认前不得据此实现。<span class="chip tbd">TBD</span>
+        </div>
+
+        <h3 id="model-objects">3.3　对象与字段</h3>
+
+        <h4>ユーザー</h4>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th style="width:112px">項目</th><th style="width:54px">必須</th><th>型・制約</th><th style="width:78px">既定値</th><th style="width:120px">編集可否</th></tr></thead>
+            <tbody>
+              <tr><td>ログイン ID</td><td>必須</td><td>半角英数字と <code>.</code> <code>_</code> <code>-</code>、4〜32 文字、大文字小文字を区別せず一意</td><td>—</td><td>登録後は変更不可</td></tr>
+              <tr><td>氏名</td><td>必須</td><td>1〜50 文字、前後空白は除去</td><td>—</td><td>可</td></tr>
+              <tr><td>メールアドレス</td><td>必須</td><td>メール形式、大文字小文字を区別せず一意、254 文字以内</td><td>—</td><td>可</td></tr>
+              <tr><td>部署</td><td>任意</td><td>固定候補から 1 つ選択（候補の提供元は <span class="chip tbd">TBD</span>）</td><td>未設定</td><td>可</td></tr>
+              <tr><td>ロール</td><td>必須</td><td>既存ロールから 1 つ。P0 は複数ロール不可</td><td>閲覧者</td><td>可</td></tr>
+              <tr><td>ステータス</td><td>必須</td><td><code>有効</code> / <code>無効</code>。専用操作でのみ変更</td><td>有効</td><td>専用操作のみ</td></tr>
+              <tr><td>最終ログイン</td><td>—</td><td>日時。認証基盤から取得できない場合は「—」<span class="chip tbd">TBD</span></td><td>—</td><td>参照のみ</td></tr>
+              <tr><td>更新日時 / 更新者</td><td>—</td><td>日時 / ユーザー名。楽観ロックの判定に使用</td><td>—</td><td>参照のみ</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout assume">
+          <span class="tag">仮定 / TBD</span>
+          登录 ID 不可改，是因为它被当作外部认证基盘的唯一标识；若外部账号与登录 ID 并非同一标识，此规则需重新确认。
+          邮箱是否必填、是否需要唯一，同样取决于外部认证基盘的数据模型。<span class="chip tbd">TBD</span>
+        </div>
+
+        <h4>ロール</h4>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th style="width:112px">項目</th><th style="width:54px">必須</th><th>型・制約</th><th style="width:120px">編集可否</th></tr></thead>
+            <tbody>
+              <tr><td>ロール ID</td><td>必須</td><td>システム生成、不変</td><td>不可</td></tr>
+              <tr><td>名称</td><td>必須</td><td>1〜30 文字、一意。システムロールは変更不可</td><td>システム管理者のみ</td></tr>
+              <tr><td>説明</td><td>任意</td><td>0〜200 文字</td><td>システム管理者のみ</td></tr>
+              <tr><td>種別</td><td>必須</td><td><code>システム</code> / <code>カスタム</code>（カスタムは P1）</td><td>不可</td></tr>
+              <tr><td>権限</td><td>必須</td><td>モジュール × 参照/更新 の集合。更新は参照を含む</td><td>システム管理者のみ</td></tr>
+              <tr><td>所属ユーザー数</td><td>—</td><td>該当ロールを持つユーザー数（有効・無効を含む）</td><td>参照のみ</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p class="small muted">
+          关系：<strong>ユーザー N : 1 ロール</strong>；<strong>ロール 1 : N 権限</strong>；権限はモジュール単位。
+          用户不直接持有权限，修改角色权限即批量改变该角色下所有用户的可用范围。
+        </p>
+      </section>
+      <section id="requirements">
+        <div class="sec-head"><span class="sec-no">04</span><h2>功能需求</h2></div>
+        <p class="muted small">每个需求按「目的 → 触发 → 处理规则 → 结果 → 异常」描述。界面文案使用日文，与现有系统一致。</p>
+
+        <!-- FR-01 -->
+        <article class="req" id="fr-01">
+          <div class="req-head">
+            <span class="req-id">FR-01</span>
+            <h3 class="req-title">用户列表与检索</h3>
+            <span class="chip p0">P0</span>
+            <span class="chip blue">/permissions/users</span>
+            <span class="chip gray">権限：参照</span>
+          </div>
+          <div class="req-body">
+            <h4>目的</h4>
+            <p>让管理员在几十到数百人的范围内，用最少操作定位「某个人现在是什么角色、是否有效」。</p>
+
+            <h4>触发与入口</h4>
+            <ul>
+              <li>从顶部导航「権限（ユーザー）管理 → ユーザー管理」、工作台卡片或 <code>/permissions/users</code> 直接进入。</li>
+              <li>需要该模块的「参照」权限；无权限时按 FR-07 处理（不渲染任何用户数据）。</li>
+            </ul>
+
+            <h4>布局</h4>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th style="width:132px">区域</th><th>内容</th></tr></thead>
+                <tbody>
+                  <tr><td>页面标题</td><td>「ユーザー管理」+ 一句说明「社内ユーザーの登録・編集・無効化を行います。」</td></tr>
+                  <tr><td>工具栏</td><td>关键词输入框（占位提示：ログインID・氏名・メール）、状態筛选、ロール筛选、「条件をクリア」、右侧「新規登録」。无更新权限时只保留检索与清除。</td></tr>
+                  <tr><td>结果区</td><td>「全 N 件」计数 + 表格 + 分页。</td></tr>
+                  <tr><td>表格列</td><td>ログインID / 氏名 / 部署 / ロール / ステータス / 最終ログイン / 更新日時 / 操作。</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <h4>处理规则</h4>
+            <ul>
+              <li>默认显示全部用户，按「更新日時」降序；同值时按登录 ID 升序，保证顺序稳定。</li>
+              <li>关键词对 <strong>登录 ID、氏名、メール</strong> 做部分一致匹配，不区分大小写与全半角。<span class="chip tbd">仮</span></li>
+              <li>状态与角色筛选取交集（AND）；三个条件可同时生效。</li>
+              <li>条件变化 300ms 后自动检索并回到第 1 页；输入框按 Enter 立即检索。</li>
+              <li>检索条件同步到 URL 查询参数（<code>q</code> / <code>status</code> / <code>role</code> / <code>page</code>），刷新与浏览器返回后条件保持，链接可分享给同权限的人。</li>
+              <li>每页 20 件；超过时显示上一页 / 下一页与页码，当前页高亮。</li>
+              <li>关键词前后空白自动去除；空字符串等同未输入。</li>
+              <li>状态与角色徽标使用固定映射，不出现原始枚举值（如 <code>active</code>）。</li>
+            </ul>
+
+            <h4>结果与状态变化</h4>
+            <p>只读，不改变任何数据。检索行为本身不写审计日志。</p>
+
+            <h4>空与异常</h4>
+            <ul>
+              <li>结果为 0 件：显示「該当するユーザーがいません」+ 副文案「検索条件を変更してください」+「条件をクリア」按钮；不显示空表格与分页。</li>
+              <li>加载中：表格区域显示骨架行，工具栏保持可操作。</li>
+              <li>加载失败：显示「ユーザー一覧の取得に失敗しました」+「再試行」，保留当前筛选条件。</li>
+              <li>会话失效：跳转登录页并带回跳地址。</li>
+            </ul>
+          </div>
+        </article>
+
+        <!-- FR-02 -->
+        <article class="req" id="fr-02">
+          <div class="req-head">
+            <span class="req-id">FR-02</span>
+            <h3 class="req-title">新建用户</h3>
+            <span class="chip p0">P0</span>
+            <span class="chip gray">権限：更新</span>
+          </div>
+          <div class="req-body">
+            <h4>目的</h4>
+            <p>新人入职或新增外部协作人员时，管理员一次填完必要信息即可授予初始访问范围。</p>
+
+            <h4>触发</h4>
+            <p>用户列表右上「新規登録」。仅拥有「更新」权限的操作者可见、可执行。</p>
+
+            <h4>表单字段与校验</h4>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th style="width:120px">字段</th><th style="width:54px">必須</th><th>校验与提示</th></tr></thead>
+                <tbody>
+                  <tr><td>ログイン ID</td><td>必須</td><td>4〜32 文字、半角英数字与 <code>.</code> <code>_</code> <code>-</code>；不区分大小写唯一。错误文案：「ログインIDは4〜32文字の半角英数字で入力してください」「このログインIDは既に使用されています」</td></tr>
+                  <tr><td>氏名</td><td>必須</td><td>1〜50 文字。空欄時「氏名を入力してください」</td></tr>
+                  <tr><td>メールアドレス</td><td>必須</td><td>邮箱格式、不区分大小写唯一。错误文案：「メールアドレスの形式が正しくありません」「このメールアドレスは既に使用されています」</td></tr>
+                  <tr><td>部署</td><td>任意</td><td>固定候选下拉，含「未設定」。</td></tr>
+                  <tr><td>ロール</td><td>必須</td><td>默认选中「閲覧者」；可选项为全部角色。管理员应能在此看到每个角色的简短说明。</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <h4>处理规则</h4>
+            <ul>
+              <li>新建用户的初始状态固定为「有効」，不在表单中提供状态选择。</li>
+              <li>客户端先做即时校验，提交时服务端必须重复校验唯一性与格式；以服务端结果为准。</li>
+              <li>登录 ID 保存后不可修改；表单中明确提示「登録後は変更できません」。</li>
+              <li>默认初始角色为「閲覧者」，避免误操作给出过高权限。</li>
+            </ul>
+
+            <h4>结果与状态变化</h4>
+            <ul>
+              <li>保存成功：弹窗关闭，列表回到第 1 页并刷新，新用户按排序规则出现在顶部；显示「ユーザーを登録しました」。</li>
+              <li>写入一条审计记录：操作種別「作成」、対象ユーザー、登録内容（登录 ID / 氏名 / 部署 / ロール / 状態）。</li>
+            </ul>
+
+            <h4>取消与异常</h4>
+            <ul>
+              <li>点击「キャンセル」、遮罩或 Esc：若有未保存修改，二次确认「入力内容を破棄しますか？」。</li>
+              <li>唯一性冲突（409）：对应字段下方显示冲突文案，保留其他输入，不关闭弹窗。</li>
+              <li>校验失败（422）：滚动到第一个错误字段并聚焦。</li>
+              <li>网络或服务异常：弹窗不关闭，显示「登録に失敗しました。もう一度お試しください」与「再試行」，输入全部保留。</li>
+            </ul>
+
+            <div class="callout assume">
+              <span class="tag">仮定 / TBD</span>
+              本系统只建立权限台帐，<strong>不创建外部认证账号</strong>。因此新建用户成功，不等于对方立刻能登录；
+              若外部认证基盘不存在对应账号，该用户登录时会被拒绝。是否需要在保存前校验外部账号存在、或触发外部开通，属于未决事项（见 Q1）。
+            </div>
+          </div>
+        </article>
+
+        <!-- FR-03 -->
+        <article class="req" id="fr-03">
+          <div class="req-head">
+            <span class="req-id">FR-03</span>
+            <h3 class="req-title">编辑用户</h3>
+            <span class="chip p0">P0</span>
+            <span class="chip gray">権限：更新</span>
+          </div>
+          <div class="req-body">
+            <h4>目的</h4>
+            <p>人员转岗、改名、换邮箱或调整职责时，就地修正资料与角色，不需要新建账号。</p>
+
+            <h4>触发</h4>
+            <p>列表行操作「編集」。点击行内其他区域不打开弹窗，避免误触。</p>
+
+            <h4>可编辑范围</h4>
+            <ul>
+              <li>可改：氏名、メールアドレス、部署、ロール。</li>
+              <li>不可改：ログイン ID（只读展示并附说明）、ステータス（走 FR-04）、最終ログイン与更新者（系统字段）。</li>
+              <li><strong>操作者不能修改自己的角色</strong>，防止把自己移出权限管理后再也进不来。该行的角色选择禁用，并提示「自分自身のロールは変更できません」。</li>
+            </ul>
+
+            <h4>处理规则</h4>
+            <ul>
+              <li>弹窗预填当前值；校验规则与 FR-02 一致（登录 ID 之外）。</li>
+              <li>并发保护：以打开弹窗时的「更新日時」为基准做乐观锁。保存时若已被他人修改，返回冲突，弹窗转为只读并提示「他のユーザーが先に更新しました」，提供「最新の内容を読み込む」。</li>
+              <li>角色变更即时生效：该用户下一次请求即按新角色判定，不要求重新登录。</li>
+            </ul>
+
+            <h4>结果与状态变化</h4>
+            <ul>
+              <li>保存成功：列表对应行就地更新并显示「ユーザーを更新しました」。</li>
+              <li>审计记录按字段记录变更前后值，未变化字段不记录。</li>
+            </ul>
+
+            <h4>异常</h4>
+            <ul>
+              <li>无变更直接保存：关闭弹窗，不写审计、不提示成功。</li>
+              <li>邮箱/登录 ID 冲突：同 FR-02。</li>
+              <li>保存过程中用户被他人停用：提示「対象ユーザーの状態が変更されています」并刷新该行，不覆盖状态。</li>
+            </ul>
+          </div>
+        </article>
+
+        <!-- FR-04 -->
+        <article class="req" id="fr-04">
+          <div class="req-head">
+            <span class="req-id">FR-04</span>
+            <h3 class="req-title">有效化 / 无效化</h3>
+            <span class="chip p0">P0</span>
+            <span class="chip risk">敏感操作</span>
+            <span class="chip gray">権限：更新</span>
+          </div>
+          <div class="req-body">
+            <h4>目的</h4>
+            <p>离职、长期休假或误建账号时，立即收回访问权，同时保留该用户在历史数据中的引用，可随时恢复。</p>
+
+            <h4>触发</h4>
+            <p>有效用户行操作显示「無効化」；无效用户显示「有効化」。仅在拥有「更新」权限时出现。</p>
+
+            <h4>确认弹窗</h4>
+            <ul>
+              <li>标题：「このユーザーを無効化しますか？」/「このユーザーを有効化しますか？」</li>
+              <li>必须展示対象：氏名 + 登录 ID + 当前角色，避免停错人。</li>
+              <li>影响说明：「無効化すると、このユーザーは次回のリクエストから本システムにアクセスできなくなります。履歴データは削除されません。」</li>
+              <li>无效化时「理由」必填：退職 / 異動 / 長期休暇 / 誤登録 / その他。选择「その他」时必须填写 1〜200 字说明。</li>
+              <li>有效化时理由选填。</li>
+              <li>主按钮为「無効化」（危险样式）/「有効化」；次按钮「キャンセル」。未选择理由时主按钮禁用。</li>
+            </ul>
+
+            <h4>保护规则</h4>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th style="width:230px">场景</th><th>系统行为</th></tr></thead>
+                <tbody>
+                  <tr><td>操作者对自己执行无效化</td><td>禁止。提示「自分自身を無効化することはできません」，不进入确认流程。</td></tr>
+                  <tr><td>目标为最后一个有效的「システム管理者」</td><td>禁止。提示「システム管理者が0人になるため無効化できません」。先指定另一名管理员再操作。</td></tr>
+                  <tr><td>目标已处于目标状态（并发导致）</td><td>不报错；刷新该行并提示「既に無効化されています」。</td></tr>
+                  <tr><td>目标不存在或已被移除</td><td>提示「対象ユーザーが見つかりません」，刷新列表。</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <h4>结果与状态变化</h4>
+            <ul>
+              <li>状态徽标即时切换（有効 ↔ 無効）；显示「ユーザーを無効化しました」/「ユーザーを有効化しました」。</li>
+              <li>审计记录：操作種別、対象、変更前後の状態、理由、操作者与时间。</li>
+              <li>无效用户保留在列表中（默认筛选为全部），可被检索到，便于复查与恢复。</li>
+              <li>有效化后访问权立即恢复；若角色权限在此期间变化，以当前角色为准。</li>
+            </ul>
+
+            <div class="callout assume">
+              <span class="tag">仮定 / TBD</span>
+              「次回リクエストからアクセス不可」要求服务端在每次请求读取用户当前状态，而不是只信任登录时签发的会话。
+              现有无状态会话是否支持即时失效、以及失效延迟的可接受上限，需要技术侧确认（见 Q6）。<span class="chip tbd">TBD</span>
+            </div>
+          </div>
+        </article>
+        <!-- FR-05 -->
+        <article class="req" id="fr-05">
+          <div class="req-head">
+            <span class="req-id">FR-05</span>
+            <h3 class="req-title">角色列表与详情</h3>
+            <span class="chip p0">P0</span>
+            <span class="chip blue">/permissions/roles</span>
+            <span class="chip gray">権限：参照</span>
+          </div>
+          <div class="req-body">
+            <h4>目的</h4>
+            <p>让管理员一眼看清「这个角色能做什么、现在有多少人拥有它」，作为授权与调权的依据。</p>
+
+            <h4>布局</h4>
+            <ul>
+              <li>页面标题「ロール管理」+ 说明「ロールと権限の割り当てを管理します。」</li>
+              <li>左侧角色列表：名称、種別徽标、所属用户数；当前选中项高亮。</li>
+              <li>右侧角色详情：名称、種別、説明、更新日時、权限矩阵（只读）、所属用户预览（最多 5 名 + 「該当ユーザーを表示」）。</li>
+              <li>有更新权限时，详情右上显示「権限を編集」；无更新权限时不显示。</li>
+            </ul>
+
+            <h4>处理规则</h4>
+            <ul>
+              <li>默认选中「システム管理者」。</li>
+              <li>权限矩阵与 3.2 节完全同源，页面不另行解释权限含义。</li>
+              <li>「該当ユーザーを表示」跳转 <code>/permissions/users?role=&lt;角色ID&gt;</code>，筛选条件沿用 FR-01。</li>
+              <li>所属用户数统计包含无效用户；详情中标注「有効 N 名 / 全 M 名」，避免误判影响面。</li>
+            </ul>
+
+            <h4>空与异常</h4>
+            <ul>
+              <li>系统角色固定存在，正常不会为 0 件；若读取失败显示「ロール情報の取得に失敗しました」+「再試行」。</li>
+              <li>角色详情读取失败时，列表保持可用，详情区显示局部错误与重试。</li>
+            </ul>
+          </div>
+        </article>
+
+        <!-- FR-06 -->
+        <article class="req" id="fr-06">
+          <div class="req-head">
+            <span class="req-id">FR-06</span>
+            <h3 class="req-title">角色权限编辑</h3>
+            <span class="chip p0">P0</span>
+            <span class="chip risk">敏感操作</span>
+            <span class="chip gray">権限：更新（仅系统管理员）</span>
+          </div>
+          <div class="req-body">
+            <h4>目的</h4>
+            <p>当职责分工变化时，一次调整即可批量改变该角色下所有人的可用范围，不必逐个改用户。</p>
+
+            <h4>触发与权限</h4>
+            <ul>
+              <li>角色详情「権限を編集」。只有拥有「権限（ユーザー）管理 = 更新」的操作者可执行，默认仅「システム管理者」满足。</li>
+              <li>「システム管理者」角色整体只读：名称、説明、权限矩阵全部禁用，并显示锁标识与说明「システム管理者の権限は変更できません（ロックアウト防止）」。</li>
+              <li>其余系统角色的名称与種別不可改，説明与权限可改。</li>
+            </ul>
+
+            <h4>编辑规则</h4>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th style="width:210px">操作</th><th>结果</th></tr></thead>
+                <tbody>
+                  <tr><td>勾选某模块「更新」</td><td>自动同时勾选「参照」，且「参照」不可单独取消；取消「参照」时会连带取消「更新」。</td></tr>
+                  <tr><td>取消某模块「参照」</td><td>该模块从角色权限中移除；该角色用户不再看到菜单、直接访问得到 403。</td></tr>
+                  <tr><td>取消自己所属角色的「権限管理 = 更新」</td><td>禁止。提示「自分自身が権限管理を操作できなくなるため変更できません」。</td></tr>
+                  <tr><td>所有模块均无权限</td><td>允许保存，但需在确认弹窗提示「このロールのユーザーはどの業務画面にもアクセスできなくなります」。</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <h4>保存流程</h4>
+            <ol>
+              <li>点击「保存」→ 弹出影响确认：「この変更は直ちに反映され、対象 N 名（有効 M 名）の権限が変わります。」并列出变更的模块与前后差异。</li>
+              <li>确认后保存；成功后退出编辑态，矩阵与角色卡片同步刷新，显示「権限を更新しました」。</li>
+              <li>若放弃修改：「破棄」或离开页面时，如有未保存变更，二次确认「変更内容を破棄しますか？」。</li>
+            </ol>
+
+            <h4>结果与状态变化</h4>
+            <ul>
+              <li>权限即时生效：该角色下所有用户的下一次请求按新矩阵判定，不要求重新登录。</li>
+              <li>审计记录每个模块的参照/更新差异，以及受影响用户数快照。</li>
+              <li>正在查看被移除模块的用户不被强制跳转，但其下一次导航或操作会得到 403；已渲染的页面内容不会追溯隐藏。</li>
+            </ul>
+
+            <h4>异常</h4>
+            <ul>
+              <li>并发修改：保存时发现角色已被他人更新 → 提示「他のユーザーがこのロールを更新しました」，刷新为最新矩阵，当前修改需重新确认，不静默覆盖。</li>
+              <li>保存失败：停留在编辑态，保留勾选状态，显示「保存に失敗しました」+「再試行」。</li>
+              <li>操作中途失去权限：保存返回 403，退出编辑态并提示「権限が変更されました。画面を再読み込みしてください」。</li>
+            </ul>
+          </div>
+        </article>
+
+        <!-- FR-07 -->
+        <article class="req" id="fr-07">
+          <div class="req-head">
+            <span class="req-id">FR-07</span>
+            <h3 class="req-title">访问控制（导航 / 路由 / 接口）</h3>
+            <span class="chip p0">P0</span>
+            <span class="chip risk">安全边界</span>
+          </div>
+          <div class="req-body">
+            <h4>目的</h4>
+            <p>让「看不到」与「进不去」保持一致，并确保隐藏菜单不是唯一防线。</p>
+
+            <h4>三层判定</h4>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th style="width:96px">层</th><th>规则</th><th style="width:210px">无权限时</th></tr></thead>
+                <tbody>
+                  <tr><td>导航 / 工作台</td><td>按当前用户的角色权限过滤模块：无「参照」的模块不出现在桌面下拉、移动抽屉与工作台卡片中；某分组下全部模块无权限时，整组不显示。</td><td>不可见</td></tr>
+                  <tr><td>页面路由</td><td>进入任何业务页面时在服务端校验该模块「参照」权限；进入写操作页面或执行写操作时校验「更新」。</td><td>渲染 403 页面（HTTP 403），不返回任何业务数据</td></tr>
+                  <tr><td>接口 / Server Action</td><td>每个受保护接口在服务端执行同一矩阵判定，不信任前端传入的角色或权限。</td><td>HTTP 403，错误码 <code>E_FORBIDDEN</code>，响应体不含业务数据</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <h4>403 页面</h4>
+            <ul>
+              <li>标题「アクセス権限がありません」，说明「このページを表示する権限がありません。管理者にお問い合わせください。」</li>
+              <li>提供「ダッシュボードへ戻る」；不显示导航中无权限的模块入口。</li>
+              <li>不得以「重定向到登录页」代替 403：会话有效但权限不足，与未登录是两种不同状态。</li>
+            </ul>
+
+            <h4>判定顺序</h4>
+            <div class="flow">
+              <span class="flow-node">リクエスト</span><span class="flow-arrow">→</span>
+              <span class="flow-node decision">ログイン済み？</span><span class="flow-arrow">→ No →</span>
+              <span class="flow-node bad">/login?next=…</span>
+              <span class="flow-arrow" style="margin-left:8px">Yes ↓</span>
+            </div>
+            <div class="flow">
+              <span class="flow-node">ユーザー有効？</span><span class="flow-arrow">→ No →</span>
+              <span class="flow-node bad">ログイン画面へ</span>
+              <span class="flow-arrow" style="margin-left:8px">Yes ↓</span>
+              <span class="flow-node decision">必要権限あり？</span><span class="flow-arrow">→ No →</span>
+              <span class="flow-node bad">403</span>
+              <span class="flow-arrow" style="margin-left:8px">Yes →</span>
+              <span class="flow-node ok">表示</span>
+            </div>
+
+            <h4>其他规则</h4>
+            <ul>
+              <li>权限变更在同一请求边界内生效：以请求到达时的用户状态与角色权限为准。</li>
+              <li>403 与 401 严格区分：403 不清理会话，不跳登录页；401 才跳登录并带回跳地址。</li>
+              <li>不存在的路由仍走 404，不因权限判定改写成 403，避免泄露路由是否存在。</li>
+              <li>导航过滤后若用户一个模块都无权访问，工作台显示「表示できるメニューがありません」并保留登出入口。</li>
+            </ul>
+          </div>
+        </article>
+
+        <!-- FR-08 -->
+        <article class="req" id="fr-08">
+          <div class="req-head">
+            <span class="req-id">FR-08</span>
+            <h3 class="req-title">操作审计</h3>
+            <span class="chip p0">P0</span>
+            <span class="chip gray">记录，不含查看界面</span>
+          </div>
+          <div class="req-body">
+            <h4>目的</h4>
+            <p>权限变更属于高风险操作，必须能回答「谁、何时、把谁的什么权限改成了什么、为什么」。</p>
+
+            <h4>记录范围</h4>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th style="width:150px">操作</th><th>必记内容</th></tr></thead>
+                <tbody>
+                  <tr><td>用户作成</td><td>登录 ID、氏名、邮箱、部署、角色、初始状态</td></tr>
+                  <tr><td>用户更新</td><td>变更字段的前后值（未变化字段不入记录）</td></tr>
+                  <tr><td>有效化 / 无效化</td><td>前后状态、理由（无效化必填）</td></tr>
+                  <tr><td>角色权限变更</td><td>角色、逐模块的前后权限、受影响用户数快照</td></tr>
+                  <tr><td>角色说明变更</td><td>前后説明（如开放编辑）</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="small">每条记录固定包含：记录 ID、操作日時（服务端时间，JST）、操作者登录 ID 与氏名、対象種別与対象 ID、操作種別、変更内容。</p>
+
+            <h4>规则</h4>
+            <ul>
+              <li>只追加，不提供修改与删除入口；任何界面操作都不能改变历史记录。</li>
+              <li>审计写入与业务写入必须同成败：记录失败时整个操作失败并提示重试，不允许「改了权限但没有记录」。</li>
+              <li>P0 只要求记录与内部可查；审计查看页面、筛选与导出列为 P1。</li>
+              <li>保持期限、脱敏范围与外部审计对接方式未定。<span class="chip tbd">TBD</span></li>
+            </ul>
+          </div>
+        </article>
+
+        <!-- FR-09 -->
+        <article class="req" id="fr-09">
+          <div class="req-head">
+            <span class="req-id">FR-09</span>
+            <h3 class="req-title">异常、空与失败状态</h3>
+            <span class="chip p0">P0</span>
+          </div>
+          <div class="req-body">
+            <p>以下状态在各页面必须有一致表现，不允许出现空白页、无反馈的失败或静默丢数据。</p>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th style="width:140px">状態</th><th style="width:220px">触发</th><th>表示与可恢复操作</th></tr></thead>
+                <tbody>
+                  <tr><td>読み込み中</td><td>首次进入、切换筛选、翻页</td><td>表格骨架屏；工具栏保持可操作；不使用全屏遮罩。</td></tr>
+                  <tr><td>0 件</td><td>无条件时用户为 0，或检索无结果</td><td>区分文案：「ユーザーがまだ登録されていません」+「新規登録」/「該当するユーザーがいません」+「条件をクリア」。</td></tr>
+                  <tr><td>401 未登录 / 会话失效</td><td>会话过期</td><td>跳转 <code>/login?next=当前路径+查询</code>，登录后回到原位置。</td></tr>
+                  <tr><td>403 权限不足</td><td>无模块参照权限</td><td>403 页面；不渲染任何业务数据；提供返回工作台。</td></tr>
+                  <tr><td>409 冲突</td><td>唯一性冲突、并发编辑、并发状态变更</td><td>就地提示冲突原因；保留用户输入；提供刷新最新值或修改字段。</td></tr>
+                  <tr><td>422 校验失败</td><td>字段格式/必填不满足</td><td>字段级错误文案 + 聚焦第一个错误项；弹窗不关闭。</td></tr>
+                  <tr><td>500 服务异常</td><td>服务端错误</td><td>「処理に失敗しました」+「再試行」；不展示内部错误细节。</td></tr>
+                  <tr><td>网络中断</td><td>请求超时/断网</td><td>提示网络异常 + 重试；写操作不清空输入。</td></tr>
+                  <tr><td>权限刚被收回</td><td>操作过程中角色变更</td><td>下一次提交返回 403，提示后刷新页面，停留在 403 或工作台。</td></tr>
+                  <tr><td>无任何菜单权限</td><td>角色矩阵全空</td><td>工作台显示「表示できるメニューがありません」，仍可登出。</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </article>
+      </section>
+      <section id="rules">
+        <div class="sec-head"><span class="sec-no">05</span><h2>共通规则</h2></div>
+
+        <h3>5.1　权限判定</h3>
+        <ul>
+          <li>权限一律来自「用户当前角色」→「3.2 权限矩阵」，不来自前端传参、URL、缓存中的旧角色。</li>
+          <li>「更新」隐含「参照」；不存在只有更新、没有参照的合法状态。</li>
+          <li>服务端判定为唯一有效判定；导航隐藏、按钮隐藏只是体验优化。</li>
+          <li>权限变更在一个请求边界内生效：请求开始时读取的用户状态与角色权限，决定该请求的全部判定结果。</li>
+        </ul>
+
+        <h3>5.2　保护规则（不可绕过）</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th style="width:250px">规则</th><th>原因与表现</th></tr></thead>
+            <tbody>
+              <tr><td>至少保留 1 名有效的システム管理者</td><td>防止全系统失去管理员。无效化最后一名管理员时拒绝，并提示先指定继任者。</td></tr>
+              <tr><td>不能无效化自己</td><td>避免误操作当场失去访问。按钮仍显示，点击后给出禁止提示。</td></tr>
+              <tr><td>不能修改自己的角色</td><td>避免把自己移出权限管理。编辑自己的资料时角色选择禁用。</td></tr>
+              <tr><td>システム管理者角色不可编辑</td><td>系统引导锁死风险的最终保险。名称、説明、权限全部只读。</td></tr>
+              <tr><td>不允许物理删除用户与角色</td><td>权限对象会被历史数据引用；停用可逆，删除不可逆。</td></tr>
+              <tr><td>不能取消自己角色的「権限管理 = 更新」</td><td>即便未来开放更多角色，也不允许操作者把自己锁在门外。</td></tr>
+              <tr><td>审计与业务同成败</td><td>不允许出现无法追溯的权限变更。</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>5.3　并发与一致性</h3>
+        <ul>
+          <li>用户编辑与角色权限编辑均使用「更新日時」做乐观锁；冲突时不静默覆盖，交由操作者确认最新值。</li>
+          <li>唯一性（登录 ID、邮箱、角色名称）以服务端判定为准；前端提示只是提前反馈。</li>
+          <li>状态变更以「当前状态」为前置条件：目标已是期望状态时返回幂等结果，不重复写审计。</li>
+        </ul>
+
+        <h3>5.4　文案、时间与展示</h3>
+        <ul>
+          <li>界面文案统一日文；本文档的中文仅用于说明。</li>
+          <li>日期时间统一 <code>YYYY-MM-DD HH:mm</code>，时区 JST；仅日期场景用 <code>YYYY-MM-DD</code>。</li>
+          <li>状态与角色必须显示为日文标签，不暴露内部枚举值。</li>
+          <li>错误提示不包含堆栈、SQL、内部服务名等实现细节。</li>
+          <li>长文本（氏名、部署、邮箱）在表格中单行省略，悬停显示完整值；弹窗中完整展示。</li>
+        </ul>
+
+        <h3>5.5　与现有实现的差距</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th style="width:190px">现状</th><th>本 PRD 要求</th></tr></thead>
+            <tbody>
+              <tr><td>两个页面均为「準備中」占位，无数据</td><td>列表、检索、增改、状态切换、角色矩阵</td></tr>
+              <tr><td>导航为静态常量，所有人相同</td><td>按角色过滤导航、工作台卡片与分组</td></tr>
+              <tr><td>守卫只判断登录态</td><td>增加用户有效性与模块权限判定</td></tr>
+              <tr><td>无 403 页面</td><td>新增 403 页面，与 401/404 区分</td></tr>
+              <tr><td>无用户/角色数据与审计</td><td>建立权限台帐与只追加审计</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="small muted">本节只描述差距，不规定实现顺序与技术方案。</p>
+      </section>
+
+      <section id="states">
+        <div class="sec-head"><span class="sec-no">06</span><h2>状态与流程</h2></div>
+
+        <h3>6.1　用户状态</h3>
+        <div class="states">
+          <div class="state-box on"><b>有効</b><span>可登录、按角色访问</span></div>
+          <div class="transition">
+            <span class="line">── 無効化 ──▶</span>
+            <span>理由必须 / 需确认</span>
+            <span class="line">◀── 有効化 ──</span>
+            <span>理由选填 / 即时恢复</span>
+          </div>
+          <div class="state-box off"><b>無効</b><span>拒绝访问、保留台帐</span></div>
+        </div>
+        <ul>
+          <li>初始状态固定为「有効」；不存在「招待中」「承認待ち」等中间态。</li>
+          <li>没有「削除」终态：无效用户永久保留，可再次有效化。</li>
+          <li>无效用户的角色保持不变；有效化后沿用当前角色，不恢复停用前的历史权限。</li>
+        </ul>
+
+        <h3>6.2　角色与权限</h3>
+        <ul>
+          <li>P0 只有系统预置角色，不能新建、重命名或删除；可编辑的只有説明与权限（系统管理者除外）。</li>
+          <li>角色权限变更立即作用于该角色全部用户；没有生效日期与定时生效。</li>
+          <li>P1 引入自定义角色后，才需要定义「角色删除前必须迁移所属用户」等规则。</li>
+        </ul>
+
+        <h3>6.3　三条核心流程</h3>
+        <div class="grid-3">
+          <div class="panel tight">
+            <h4 style="margin-top:0">新人授权</h4>
+            <p class="small">进入用户列表 → 新規登録 → 填登录 ID / 氏名 / 邮箱 / 部署 → 选择初始角色（默认閲覧者）→ 保存 → 对方获得对应菜单。</p>
+          </div>
+          <div class="panel tight">
+            <h4 style="margin-top:0">离职停用</h4>
+            <p class="small">检索目标 → 無効化 → 核对氏名与登录 ID → 选择理由（退職）→ 确认 → 对方下次请求被拒；台帐与历史保留。</p>
+          </div>
+          <div class="panel tight">
+            <h4 style="margin-top:0">职责调整</h4>
+            <p class="small">转岗时优先改用户角色（个体）；同类人员批量变化时改角色权限（群体）。两者都会即时生效并留下审计。</p>
+          </div>
+        </div>
+      </section>
+      <section id="prototype">
+        <div class="sec-head"><span class="sec-no">07</span><h2>交互原型</h2></div>
+        <p>
+          下面的原型用于评审交互与规则，<strong>不是最终界面</strong>，数据为演示用。
+          操作者固定为「佐藤 健一（システム管理者）」，可直接体验：检索、新建校验、编辑、停用保护、角色矩阵编辑与锁定。
+        </p>
+
+        <div class="proto">
+          <div class="proto-bar">
+            <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+            <span class="proto-url" id="proto-url">/permissions/users</span>
+          </div>
+          <div class="proto-tabs">
+            <button class="proto-tab active" data-tab="users" type="button">ユーザー管理</button>
+            <button class="proto-tab" data-tab="roles" type="button">ロール管理</button>
+          </div>
+          <div class="proto-body">
+            <!-- users -->
+            <div id="tab-users">
+              <div class="proto-head">
+                <div>
+                  <h4>ユーザー管理</h4>
+                  <p>社内ユーザーの登録・編集・無効化を行います。</p>
+                </div>
+                <button class="btn primary" id="btn-new" type="button">＋ 新規登録</button>
+              </div>
+              <div class="toolbar">
+                <input class="input grow" id="q" type="text" placeholder="ログインID・氏名・メールで検索" autocomplete="off" />
+                <select class="select" id="f-status">
+                  <option value="all">すべてのステータス</option>
+                  <option value="active">有効</option>
+                  <option value="inactive">無効</option>
+                </select>
+                <select class="select" id="f-role"><option value="all">すべてのロール</option></select>
+                <button class="btn" id="btn-clear" type="button">条件をクリア</button>
+              </div>
+              <p class="result-count" id="count"></p>
+              <div class="table-wrap ptable-wrap" id="user-table-wrap">
+                <table class="ptable">
+                  <thead>
+                    <tr>
+                      <th>ログインID</th><th>氏名</th><th>部署</th><th>ロール</th>
+                      <th>ステータス</th><th>最終ログイン</th><th>更新日時</th><th style="width:120px">操作</th>
+                    </tr>
+                  </thead>
+                  <tbody id="user-tbody"></tbody>
+                </table>
+              </div>
+              <div class="empty-box" id="user-empty" hidden>
+                <b id="empty-title">該当するユーザーがいません</b>
+                <span id="empty-sub">検索条件を変更してください</span>
+                <div style="margin-top:10px"><button class="btn sm" id="btn-empty-clear" type="button">条件をクリア</button></div>
+              </div>
+            </div>
+            <!-- roles -->
+            <div id="tab-roles" hidden>
+              <div class="proto-head">
+                <div>
+                  <h4>ロール管理</h4>
+                  <p>ロールと権限の割り当てを管理します。</p>
+                </div>
+              </div>
+              <div class="role-grid">
+                <div class="role-list" id="role-list"></div>
+                <div id="role-detail"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <p class="small muted" style="margin-top:10px">
+          提示：在「ロール管理」中选择「システム管理者」可看到锁定状态；选择其他角色可编辑矩阵并保存，保存后切换到用户页可观察所属用户数变化。
+        </p>
+      </section>
+
+      <section id="open">
+        <div class="sec-head"><span class="sec-no">08</span><h2>未决事项与假设</h2></div>
+        <p>以下问题会改变权限模型或安全边界，需在进入实现前确认。未确认期间，本文档采用「当前处理」一列的做法。</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th style="width:52px">#</th><th style="width:230px">问题</th><th>为什么重要</th><th style="width:250px">当前处理（仮）</th></tr></thead>
+            <tbody>
+              <tr>
+                <td class="num">Q1</td>
+                <td>用户台帐与外部认证基盘，哪边是「正」？新建用户时是否校验/开通外部账号？</td>
+                <td>可能出现「本系统有权限、但外部无账号无法登录」或「外部有账号、本系统无台帐被拒」的不一致。</td>
+                <td>本系统只存权限台帐；新建时不同步外部，登录由外部认证决定。<span class="chip tbd">TBD</span></td>
+              </tr>
+              <tr>
+                <td class="num">Q2</td>
+                <td>角色数量、名称与 3.2 权限矩阵的最终取值？</td>
+                <td>决定每个岗位实际能看到与能操作的范围，直接影响上线后的可用性。</td>
+                <td>采用四个系统角色的提案矩阵，待业务确认后固化。<span class="chip tbd">TBD</span></td>
+              </tr>
+              <tr>
+                <td class="num">Q3</td>
+                <td>是否需要「一人多角色」？</td>
+                <td>兼岗人员需要权限并集；若确定需要，用户与角色的关系、UI 与判定都要改。</td>
+                <td>P0 为 1 用户 1 角色；多角色列 P1，并以角色新建/迁移规则为前提。<span class="chip tbd">仮</span></td>
+              </tr>
+              <tr>
+                <td class="num">Q4</td>
+                <td>审计日志的查看权限、保持期限、是否对接外部审计？</td>
+                <td>影响合规与留存成本；也决定 P1 的查询与导出设计。</td>
+                <td>P0 只记录不提供界面；保持期限与访问者未定。<span class="chip tbd">TBD</span></td>
+              </tr>
+              <tr>
+                <td class="num">Q5</td>
+                <td>部署候选值来自哪里？是否需要部门主数据？</td>
+                <td>固定候选与外部主数据的同步方式不同，会影响编辑体验与数据一致性。</td>
+                <td>使用固定候选，未设定可为空。<span class="chip tbd">TBD</span></td>
+              </tr>
+              <tr>
+                <td class="num">Q6</td>
+                <td>停用与权限变更是否要求「下一次请求即生效」？现有无状态会话如何满足？</td>
+                <td>若会话只在登录时判定，离职人员可能继续访问直到会话过期，构成安全缺口。</td>
+                <td>以「下一次请求生效」为目标；实现方式与可接受延迟待技术确认。<span class="chip tbd">TBD</span></td>
+              </tr>
+              <tr>
+                <td class="num">Q7</td>
+                <td>权限粒度只到「模块」是否足够？是否需要页面级或操作级？</td>
+                <td>例如「能看请求列表但不能审批」需要更细粒度；这会改变矩阵结构与编辑界面。</td>
+                <td>P0 为模块级（参照/更新）；更细粒度暂不纳入。<span class="chip tbd">仮</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout">
+          <span class="tag">评审重点</span>
+          请优先确认 Q2（权限矩阵取值）与 Q6（即时失效），这两项决定本模块能否真正承担访问控制职责；
+          其余问题可在实现过程中并行确认，不阻塞原型评审。
+        </div>
+      </section>
+
+      <div class="foot">
+        <span>依据：<code>features/back-office/SPEC.md</code> ・ <code>proxy.ts</code> ・ <code>lib/auth.ts</code> ・ <code>components/app/nav-config.ts</code></span>
+        <span>PRD v0.1 ・ 2026-11-06 ・ 草案</span>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal" id="modal" role="dialog" aria-modal="true"></div>
+</div>
+<div class="toast-wrap" id="toasts"></div>
+<script>
+(function () {
+  "use strict";
+
+  var OPERATOR_ID = "sato.kenichi";
+  var DEPTS = ["情報システム部", "経理部", "請求業務部", "総務部", "営業部"];
+  var MODULES = [
+    { id: "permissions", name: "権限（ユーザー）管理" },
+    { id: "master", name: "マスタ管理" },
+    { id: "billing", name: "請求業務管理" },
+    { id: "cod", name: "代引業務管理" },
+    { id: "repayment", name: "弁済業務管理" },
+    { id: "statement", name: "明細ダウンロード" }
+  ];
+
+  function permsAll(editSet) {
+    var p = {};
+    MODULES.forEach(function (m) {
+      p[m.id] = { view: true, edit: editSet.indexOf(m.id) >= 0 };
+    });
+    return p;
+  }
+
+  var roles = [
+    {
+      id: "sysadmin", name: "システム管理者", type: "システム", locked: true,
+      desc: "システム全体を管理し、ユーザーとロールを運用します。",
+      perms: permsAll(MODULES.map(function (m) { return m.id; })),
+      updatedAt: "2026-10-28 10:00"
+    },
+    {
+      id: "master", name: "マスタ管理者", type: "システム", locked: false,
+      desc: "店舗・請求CD・単価などのマスタを維持します。",
+      perms: {
+        permissions: { view: false, edit: false },
+        master: { view: true, edit: true },
+        billing: { view: true, edit: false },
+        cod: { view: true, edit: false },
+        repayment: { view: true, edit: false },
+        statement: { view: true, edit: false }
+      },
+      updatedAt: "2026-10-30 14:22"
+    },
+    {
+      id: "billing", name: "請求担当", type: "システム", locked: false,
+      desc: "請求データの取込・承認・調整・計上を担当します。",
+      perms: {
+        permissions: { view: false, edit: false },
+        master: { view: true, edit: false },
+        billing: { view: true, edit: true },
+        cod: { view: true, edit: false },
+        repayment: { view: true, edit: false },
+        statement: { view: true, edit: false }
+      },
+      updatedAt: "2026-11-02 09:41"
+    },
+    {
+      id: "viewer", name: "閲覧者", type: "システム", locked: false,
+      desc: "業務データの参照のみを行う管理・監査向けのロールです。",
+      perms: {
+        permissions: { view: false, edit: false },
+        master: { view: true, edit: false },
+        billing: { view: true, edit: false },
+        cod: { view: true, edit: false },
+        repayment: { view: true, edit: false },
+        statement: { view: true, edit: false }
+      },
+      updatedAt: "2026-10-25 16:03"
+    }
+  ];
+
+  var users = [
+    { id: "u1", loginId: "sato.kenichi", name: "佐藤 健一", email: "sato.kenichi@example.co.jp", dept: "情報システム部", roleId: "sysadmin", status: "active", lastLogin: "2026-11-06 09:12", updatedAt: "2026-11-05 18:20" },
+    { id: "u2", loginId: "suzuki.hanako", name: "鈴木 花子", email: "suzuki.hanako@example.co.jp", dept: "経理部", roleId: "master", status: "active", lastLogin: "2026-11-06 08:47", updatedAt: "2026-11-04 11:02" },
+    { id: "u3", loginId: "tanaka.ichiro", name: "田中 一郎", email: "tanaka.ichiro@example.co.jp", dept: "請求業務部", roleId: "billing", status: "active", lastLogin: "2026-11-05 19:31", updatedAt: "2026-11-03 15:10" },
+    { id: "u4", loginId: "takahashi.misaki", name: "高橋 美咲", email: "takahashi.misaki@example.co.jp", dept: "請求業務部", roleId: "billing", status: "active", lastLogin: "2026-11-06 09:05", updatedAt: "2026-11-02 13:55" },
+    { id: "u5", loginId: "ito.daisuke", name: "伊藤 大輔", email: "ito.daisuke@example.co.jp", dept: "経理部", roleId: "viewer", status: "active", lastLogin: "2026-11-01 10:18", updatedAt: "2026-10-31 17:40" },
+    { id: "u6", loginId: "watanabe.naoko", name: "渡辺 直子", email: "watanabe.naoko@example.co.jp", dept: "総務部", roleId: "viewer", status: "inactive", lastLogin: "2026-08-30 18:02", updatedAt: "2026-09-01 09:00" },
+    { id: "u7", loginId: "yamamoto.sho", name: "山本 翔", email: "yamamoto.sho@example.co.jp", dept: "情報システム部", roleId: "sysadmin", status: "active", lastLogin: "2026-11-06 08:30", updatedAt: "2026-11-05 09:44" },
+    { id: "u8", loginId: "nakamura.aya", name: "中村 綾", email: "nakamura.aya@example.co.jp", dept: "請求業務部", roleId: "master", status: "active", lastLogin: "2026-11-04 16:25", updatedAt: "2026-10-29 12:12" }
+  ];
+
+  var state = {
+    tab: "users", q: "", status: "all", role: "all",
+    selectedRole: "sysadmin", roleEditing: false,
+    draft: null, userModalDirty: false
+  };
+
+  var $ = function (sel, root) { return (root || document).querySelector(sel); };
+  var $$ = function (sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); };
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function roleById(id) {
+    for (var i = 0; i < roles.length; i++) if (roles[i].id === id) return roles[i];
+    return null;
+  }
+  function pad(n) { return n < 10 ? "0" + n : String(n); }
+  function nowStr() {
+    var d = new Date();
+    return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()) + " " + pad(d.getHours()) + ":" + pad(d.getMinutes());
+  }
+  function toast(msg, kind) {
+    var wrap = $("#toasts");
+    var el = document.createElement("div");
+    el.className = "toast" + (kind ? " " + kind : "");
+    el.textContent = msg;
+    wrap.appendChild(el);
+    setTimeout(function () {
+      el.style.transition = "opacity .2s";
+      el.style.opacity = "0";
+      setTimeout(function () { el.remove(); }, 220);
+    }, 3200);
+  }
+  function activeAdminCount(excludeId) {
+    return users.filter(function (u) {
+      return u.status === "active" && u.roleId === "sysadmin" && u.id !== excludeId;
+    }).length;
+  }
+
+  /* ---------------- users ---------------- */
+  function filteredUsers() {
+    var q = state.q.trim().toLowerCase();
+    return users.filter(function (u) {
+      if (state.status !== "all" && u.status !== state.status) return false;
+      if (state.role !== "all" && u.roleId !== state.role) return false;
+      if (!q) return true;
+      return [u.loginId, u.name, u.email].some(function (v) {
+        return v.toLowerCase().indexOf(q) >= 0;
+      });
+    }).sort(function (a, b) {
+      if (a.updatedAt !== b.updatedAt) return a.updatedAt < b.updatedAt ? 1 : -1;
+      return a.loginId < b.loginId ? -1 : 1;
+    });
+  }
+
+  function statusBadge(status) {
+    return status === "active"
+      ? '<span class="status on">有効</span>'
+      : '<span class="status off">無効</span>';
+  }
+
+  function renderUsers() {
+    var list = filteredUsers();
+    var tbody = $("#user-tbody");
+    tbody.innerHTML = list.map(function (u) {
+      var r = roleById(u.roleId);
+      var actionLabel = u.status === "active" ? "無効化" : "有効化";
+      var cls = u.status === "active" ? "btn sm danger" : "btn sm";
+      return '<tr>' +
+        '<td class="mono">' + esc(u.loginId) + '</td>' +
+        '<td>' + esc(u.name) + '</td>' +
+        '<td>' + esc(u.dept || "—") + '</td>' +
+        '<td><span class="role-pill">' + esc(r ? r.name : "—") + '</span></td>' +
+        '<td>' + statusBadge(u.status) + '</td>' +
+        '<td class="mono">' + esc(u.lastLogin) + '</td>' +
+        '<td class="mono">' + esc(u.updatedAt) + '</td>' +
+        '<td><button class="btn sm" type="button" data-act="edit" data-id="' + u.id + '">編集</button> ' +
+        '<button class="' + cls + '" type="button" data-act="status" data-id="' + u.id + '">' + actionLabel + '</button></td>' +
+        '</tr>';
+    }).join("");
+
+    var hasFilter = state.q.trim() !== "" || state.status !== "all" || state.role !== "all";
+    var empty = $("#user-empty");
+    $("#user-table-wrap").hidden = list.length === 0;
+    empty.hidden = list.length !== 0;
+    $("#count").textContent = "全 " + list.length + " 件" + (hasFilter ? "（全 " + users.length + " 件中）" : "");
+
+    if (list.length === 0) {
+      $("#empty-title").textContent = hasFilter ? "該当するユーザーがいません" : "ユーザーがまだ登録されていません";
+      $("#empty-sub").textContent = hasFilter ? "検索条件を変更してください" : "「新規登録」から最初のユーザーを追加してください";
+      $("#btn-empty-clear").style.display = hasFilter ? "" : "none";
+    }
+  }
+
+  function renderRoleFilter() {
+    var sel = $("#f-role");
+    sel.innerHTML = '<option value="all">すべてのロール</option>' +
+      roles.map(function (r) {
+        return '<option value="' + r.id + '">' + esc(r.name) + '</option>';
+      }).join("");
+    sel.value = state.role;
+  }
+
+  $("#q").addEventListener("input", function (e) {
+    var v = e.target.value;
+    clearTimeout(this._t);
+    this._t = setTimeout(function () {
+      state.q = v;
+      renderUsers();
+    }, 250);
+  });
+  $("#q").addEventListener("keydown", function (e) {
+    if (e.key === "Enter") {
+      clearTimeout(this._t);
+      state.q = e.target.value;
+      renderUsers();
+    }
+  });
+  $("#f-status").addEventListener("change", function (e) {
+    state.status = e.target.value;
+    renderUsers();
+  });
+  $("#f-role").addEventListener("change", function (e) {
+    state.role = e.target.value;
+    renderUsers();
+  });
+  function clearFilters() {
+    state.q = ""; state.status = "all"; state.role = "all";
+    $("#q").value = ""; $("#f-status").value = "all"; $("#f-role").value = "all";
+    renderUsers();
+  }
+  $("#btn-clear").addEventListener("click", clearFilters);
+  $("#btn-empty-clear").addEventListener("click", clearFilters);
+
+  $("#user-tbody").addEventListener("click", function (e) {
+    var btn = e.target.closest("button[data-act]");
+    if (!btn) return;
+    var id = btn.getAttribute("data-id");
+    if (btn.getAttribute("data-act") === "edit") openUserModal(id);
+    else openStatusModal(id);
+  });
+  $("#btn-new").addEventListener("click", function () { openUserModal(null); });
+  /* ---------------- modal ---------------- */
+  var overlay = $("#overlay");
+  var modal = $("#modal");
+  function openModal(html) {
+    modal.innerHTML = html;
+    overlay.classList.add("show");
+    document.body.style.overflow = "hidden";
+  }
+  function closeModal() {
+    overlay.classList.remove("show");
+    modal.innerHTML = "";
+    document.body.style.overflow = "";
+    state.userModalDirty = false;
+  }
+  overlay.addEventListener("click", function (e) { if (e.target === overlay) closeModal(); });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && overlay.classList.contains("show")) closeModal();
+  });
+
+  function fieldHtml(key, label, inputHtml, help) {
+    return '<div class="field" data-field="' + key + '">' +
+      '<label for="m-' + key + '">' + label + '</label>' +
+      inputHtml +
+      '<div class="help">' + help + '</div>' +
+      '<div class="err"></div>' +
+      '</div>';
+  }
+  function setErr(key, msg) {
+    var wrap = modal.querySelector('[data-field="' + key + '"]');
+    if (!wrap) return;
+    wrap.classList.toggle("invalid", !!msg);
+    wrap.querySelector(".err").textContent = msg || "";
+  }
+
+  function openUserModal(id) {
+    var user = null;
+    users.forEach(function (u) { if (u.id === id) user = u; });
+    var isEdit = !!user;
+    var isSelf = isEdit && user.loginId === OPERATOR_ID;
+    var roleOptions = roles.map(function (r) {
+      return '<option value="' + r.id + '"' +
+        (user ? (user.roleId === r.id ? " selected" : "") : (r.id === "viewer" ? " selected" : "")) +
+        '>' + esc(r.name) + "</option>";
+    }).join("");
+    var deptOptions = '<option value="">未設定</option>' + DEPTS.map(function (d) {
+      return '<option value="' + esc(d) + '"' + (user && user.dept === d ? " selected" : "") + '>' + esc(d) + "</option>";
+    }).join("");
+
+    openModal(
+      '<div class="modal-head"><h4>' + (isEdit ? "ユーザーを編集" : "ユーザーを登録") + "</h4>" +
+      '<p>' + (isEdit ? "登録済みの情報とロールを更新します。" : "登録後、このユーザーは選択したロールの権限でアクセスできます。") + "</p></div>" +
+      '<div class="modal-body">' +
+      fieldHtml("loginId", "ログインID<span class=\"req-star\">*</span>",
+        '<input class="input" id="m-loginId" type="text" autocomplete="off" value="' + (user ? esc(user.loginId) : "") + '"' + (isEdit ? " disabled" : "") + " />",
+        isEdit ? "登録後は変更できません。" : "4〜32文字の半角英数字と . _ - が使用できます。") +
+      fieldHtml("name", "氏名<span class=\"req-star\">*</span>",
+        '<input class="input" id="m-name" type="text" autocomplete="off" value="' + (user ? esc(user.name) : "") + '" />',
+        "1〜50文字。") +
+      fieldHtml("email", "メールアドレス<span class=\"req-star\">*</span>",
+        '<input class="input" id="m-email" type="email" autocomplete="off" value="' + (user ? esc(user.email) : "") + '" />',
+        "ログインIDとは別に、連絡先として使用します。") +
+      '<div class="form-row">' +
+      fieldHtml("dept", "部署",
+        '<select class="select" id="m-dept">' + deptOptions + "</select>", "任意。") +
+      fieldHtml("role", "ロール<span class=\"req-star\">*</span>",
+        '<select class="select" id="m-role"' + (isSelf ? " disabled" : "") + ">" + roleOptions + "</select>",
+        isSelf ? "自分自身のロールは変更できません。" : "このユーザーの権限範囲を決めます。") +
+      "</div>" +
+      '<div class="impact">ステータスは「有効」で登録されます。無効化は登録後の一覧から行えます。</div>' +
+      "</div>" +
+      '<div class="modal-foot">' +
+      '<button class="btn" type="button" id="m-cancel">キャンセル</button>' +
+      '<button class="btn primary" type="button" id="m-save">' + (isEdit ? "更新する" : "登録する") + "</button>" +
+      "</div>"
+    );
+
+    state.userModalDirty = false;
+    $$("#m-loginId, #m-name, #m-email, #m-dept, #m-role", modal).forEach(function (el) {
+      el.addEventListener("input", function () { state.userModalDirty = true; });
+      el.addEventListener("change", function () { state.userModalDirty = true; });
+    });
+    $("#m-cancel", modal).addEventListener("click", function () {
+      if (state.userModalDirty && !window.confirm("入力内容を破棄しますか？")) return;
+      closeModal();
+    });
+    $("#m-save", modal).addEventListener("click", function () { submitUser(user); });
+  }
+
+  function submitUser(user) {
+    var isEdit = !!user;
+    var loginId = ($("#m-loginId", modal).value || "").trim();
+    var name = ($("#m-name", modal).value || "").trim();
+    var email = ($("#m-email", modal).value || "").trim();
+    var dept = $("#m-dept", modal).value;
+    var roleId = $("#m-role", modal).value;
+    var ok = true;
+
+    ["loginId", "name", "email", "role"].forEach(function (k) { setErr(k, ""); });
+
+    if (!isEdit) {
+      if (!/^[A-Za-z0-9._-]{4,32}$/.test(loginId)) {
+        setErr("loginId", "ログインIDは4〜32文字の半角英数字で入力してください"); ok = false;
+      } else {
+        var dupId = users.some(function (u) {
+          return u.loginId.toLowerCase() === loginId.toLowerCase() && (!user || u.id !== user.id);
+        });
+        if (dupId) { setErr("loginId", "このログインIDは既に使用されています"); ok = false; }
+      }
+    }
+    if (name.length < 1 || name.length > 50) {
+      setErr("name", name.length === 0 ? "氏名を入力してください" : "氏名は50文字以内で入力してください"); ok = false;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) {
+      setErr("email", "メールアドレスの形式が正しくありません"); ok = false;
+    } else {
+      var dupMail = users.some(function (u) {
+        return u.email.toLowerCase() === email.toLowerCase() && (!user || u.id !== user.id);
+      });
+      if (dupMail) { setErr("email", "このメールアドレスは既に使用されています"); ok = false; }
+    }
+    if (!roleId) { setErr("role", "ロールを選択してください"); ok = false; }
+
+    if (!ok) {
+      var first = modal.querySelector(".field.invalid .input, .field.invalid .select");
+      if (first) first.focus();
+      return;
+    }
+
+    if (isEdit) {
+      if (user.loginId === OPERATOR_ID && roleId !== user.roleId) {
+        toast("自分自身のロールは変更できません", "err");
+        return;
+      }
+      var changed = user.name !== name || user.email !== email ||
+        (user.dept || "") !== dept || user.roleId !== roleId;
+      if (!changed) { closeModal(); return; }
+      user.name = name; user.email = email; user.dept = dept; user.roleId = roleId;
+      user.updatedAt = nowStr();
+      toast("ユーザーを更新しました", "ok");
+    } else {
+      users.unshift({
+        id: "u" + Date.now(), loginId: loginId, name: name, email: email, dept: dept,
+        roleId: roleId, status: "active", lastLogin: "—", updatedAt: nowStr()
+      });
+      toast("ユーザーを登録しました", "ok");
+    }
+    state.userModalDirty = false;
+    closeModal();
+    state.status = "all"; state.role = "all"; state.q = "";
+    $("#q").value = ""; $("#f-status").value = "all"; renderRoleFilter(); renderUsers(); renderRoles();
+  }
+
+  function openStatusModal(id) {
+    var user = null;
+    users.forEach(function (u) { if (u.id === id) user = u; });
+    if (!user) return;
+
+    if (user.status === "active") {
+      if (user.loginId === OPERATOR_ID) {
+        toast("自分自身を無効化することはできません", "err");
+        return;
+      }
+      if (user.roleId === "sysadmin" && activeAdminCount(user.id) === 0) {
+        toast("システム管理者が0人になるため無効化できません", "err");
+        return;
+      }
+    }
+
+    var disabling = user.status === "active";
+    var r = roleById(user.roleId);
+    var reasonOptions = '<option value="">理由を選択してください</option>' +
+      ["退職", "異動", "長期休暇", "誤登録", "その他"].map(function (v) {
+        return '<option value="' + v + '">' + v + "</option>";
+      }).join("");
+
+    openModal(
+      '<div class="modal-head"><h4>' + (disabling ? "このユーザーを無効化しますか？" : "このユーザーを有効化しますか？") + "</h4>" +
+      '<p>' + (disabling
+        ? "無効化すると、このユーザーは次回のリクエストから本システムにアクセスできなくなります。履歴データは削除されません。"
+        : "有効化すると、このユーザーは現在のロール権限で再びアクセスできるようになります。") + "</p></div>" +
+      '<div class="modal-body">' +
+      '<div class="impact"><strong>' + esc(user.name) + "</strong>（" + esc(user.loginId) + "）<br />現在のロール：" + esc(r ? r.name : "—") + "</div>" +
+      (disabling
+        ? fieldHtml("reason", "無効化の理由<span class=\"req-star\">*</span>",
+            '<select class="select" id="m-reason">' + reasonOptions + "</select>", "監査ログに記録されます。") +
+          '<div class="field" data-field="reasonText" style="display:none">' +
+          '<label for="m-reasonText">理由の詳細<span class="req-star">*</span></label>' +
+          '<input class="input" id="m-reasonText" type="text" placeholder="1〜200文字で入力" />' +
+          '<div class="help">「その他」を選んだ場合は入力が必要です。</div><div class="err"></div></div>'
+        : fieldHtml("reason", "有効化の理由（任意）",
+            '<input class="input" id="m-reason" type="text" placeholder="例：復職のため" />', "任意。監査ログに記録されます。")) +
+      "</div>" +
+      '<div class="modal-foot">' +
+      '<button class="btn" type="button" id="m-cancel">キャンセル</button>' +
+      '<button class="btn ' + (disabling ? "danger" : "primary") + '" type="button" id="m-confirm"' + (disabling ? " disabled" : "") + ">" +
+      (disabling ? "無効化する" : "有効化する") + "</button></div>"
+    );
+
+    var confirmBtn = $("#m-confirm", modal);
+    if (disabling) {
+      $("#m-reason", modal).addEventListener("change", function (e) {
+        var other = e.target.value === "その他";
+        modal.querySelector('[data-field="reasonText"]').style.display = other ? "" : "none";
+        confirmBtn.disabled = !e.target.value || (other && !$("#m-reasonText", modal).value.trim());
+      });
+      $("#m-reasonText", modal).addEventListener("input", function (e) {
+        confirmBtn.disabled = !$("#m-reason", modal).value || !e.target.value.trim();
+      });
+    }
+    $("#m-cancel", modal).addEventListener("click", closeModal);
+    confirmBtn.addEventListener("click", function () {
+      if (disabling) {
+        var reason = $("#m-reason", modal).value;
+        if (!reason) return;
+        if (reason === "その他" && !$("#m-reasonText", modal).value.trim()) {
+          setErr("reasonText", "理由の詳細を入力してください");
+          return;
+        }
+        user.status = "inactive";
+        toast("ユーザーを無効化しました（理由：" + reason + "）", "ok");
+      } else {
+        user.status = "active";
+        toast("ユーザーを有効化しました", "ok");
+      }
+      user.updatedAt = nowStr();
+      closeModal();
+      renderUsers(); renderRoles();
+    });
+  }
+
+  /* ---------------- roles ---------------- */
+  function roleStats(roleId) {
+    var all = users.filter(function (u) { return u.roleId === roleId; });
+    return { total: all.length, active: all.filter(function (u) { return u.status === "active"; }).length };
+  }
+  function permLabel(p) {
+    if (!p || (!p.view && !p.edit)) return "—";
+    return p.edit ? "更新可" : "参照のみ";
+  }
+
+  function renderRoleList() {
+    $("#role-list").innerHTML = roles.map(function (r) {
+      var s = roleStats(r.id);
+      return '<button type="button" class="role-item' + (state.selectedRole === r.id ? " active" : "") + '" data-role="' + r.id + '">' +
+        "<b>" + esc(r.name) + (r.locked ? ' <span class="lock-note">LOCK</span>' : "") + "</b>" +
+        "<span>" + s.total + " 名（有効 " + s.active + " 名）</span></button>";
+    }).join("");
+  }
+
+  function renderRoleDetail() {
+    var role = roleById(state.selectedRole) || roles[0];
+    var s = roleStats(role.id);
+    var editing = state.roleEditing && !role.locked;
+    var perms = editing ? state.draft : role.perms;
+    var members = users.filter(function (u) { return u.roleId === role.id; });
+    var preview = members.slice(0, 5).map(function (u) {
+      return "<div style=\"display:flex;justify-content:space-between;gap:8px;padding:4px 0;border-bottom:1px solid var(--line);font-size:12px\">" +
+        "<span>" + esc(u.name) + ' <span class="mono" style="color:var(--faint)">' + esc(u.loginId) + "</span></span>" +
+        statusBadge(u.status) + "</div>";
+    }).join("");
+
+    var matrixRows = MODULES.map(function (m) {
+      var p = perms[m.id] || { view: false, edit: false };
+      return "<tr" + (role.locked ? ' class="locked"' : "") + ">" +
+        "<td>" + esc(m.name) + "</td>" +
+        '<td class="c"><input type="checkbox" data-module="' + m.id + '" data-kind="view"' +
+        (p.view ? " checked" : "") + (role.locked || !editing ? " disabled" : "") + " /></td>" +
+        '<td class="c"><input type="checkbox" data-module="' + m.id + '" data-kind="edit"' +
+        (p.edit ? " checked" : "") + (role.locked || !editing ? " disabled" : "") + " /></td>" +
+        "</tr>";
+    }).join("");
+
+    var dirty = editing && JSON.stringify(state.draft) !== JSON.stringify(role.perms);
+
+    $("#role-detail").innerHTML =
+      '<div class="role-detail">' +
+      '<div class="role-detail-head"><div>' +
+      "<h5>" + esc(role.name) + ' <span class="chip gray">' + esc(role.type) + "</span>" +
+      (role.locked ? ' <span class="lock-note">変更不可</span>' : "") + "</h5>" +
+      "<p>" + esc(role.desc) + "</p></div>" +
+      "<div>" + (!role.locked && !editing
+        ? '<button class="btn sm primary" type="button" data-act="edit-perms">権限を編集</button>'
+        : "") + "</div></div>" +
+      (role.locked
+        ? '<div class="impact" style="background:var(--amber-weak);border-color:var(--amber-line)">システム管理者の権限は変更できません（ロックアウト防止）。</div>'
+        : "") +
+      '<table class="matrix">' +
+      "<thead><tr><th>モジュール</th><th class=\"c\">参照</th><th class=\"c\">更新</th></tr></thead>" +
+      "<tbody>" + matrixRows + "</tbody></table>" +
+      '<div class="small muted" style="margin-top:8px">更新日時 ' + esc(role.updatedAt) +
+      " ・ 所属 " + s.total + " 名（有効 " + s.active + " 名）</div>" +
+      '<div style="margin-top:10px"><strong style="font-size:11.5px">所属ユーザー</strong>' +
+      (preview || '<div class="small muted">該当ユーザーはいません</div>') +
+      '<div style="margin-top:8px"><button class="btn sm" type="button" data-act="show-users">該当ユーザーを表示</button></div></div>' +
+      (editing
+        ? '<div class="save-bar"><span class="hint">' +
+          (dirty ? "変更内容は保存されていません。" : "変更はありません。") +
+          "</span><span>" +
+          '<button class="btn sm" type="button" data-act="discard">破棄</button> ' +
+          '<button class="btn sm primary" type="button" data-act="save" ' + (dirty ? "" : "disabled") + ">保存</button></span></div>"
+        : "") +
+      "</div>";
+  }
+
+  function renderRoles() {
+    renderRoleList();
+    renderRoleDetail();
+  }
+
+  $("#role-list").addEventListener("click", function (e) {
+    var btn = e.target.closest(".role-item");
+    if (!btn) return;
+    var next = btn.getAttribute("data-role");
+    if (next === state.selectedRole) return;
+    if (state.roleEditing && JSON.stringify(state.draft) !== JSON.stringify((roleById(state.selectedRole) || {}).perms)) {
+      if (!window.confirm("保存していない権限の変更を破棄しますか？")) return;
+    }
+    state.selectedRole = next;
+    state.roleEditing = false;
+    state.draft = null;
+    renderRoles();
+  });
+
+  $("#role-detail").addEventListener("click", function (e) {
+    var btn = e.target.closest("button[data-act]");
+    if (!btn) return;
+    var role = roleById(state.selectedRole);
+    var act = btn.getAttribute("data-act");
+
+    if (act === "edit-perms" && role && !role.locked) {
+      state.roleEditing = true;
+      state.draft = JSON.parse(JSON.stringify(role.perms));
+      renderRoleDetail();
+      return;
+    }
+    if (act === "discard") {
+      var dirty = JSON.stringify(state.draft) !== JSON.stringify(role.perms);
+      if (dirty && !window.confirm("変更内容を破棄しますか？")) return;
+      state.roleEditing = false;
+      state.draft = null;
+      renderRoleDetail();
+      return;
+    }
+    if (act === "save") {
+      if (!dirtyNow(role)) { toast("変更はありません"); return; }
+      confirmRoleSave(role);
+      return;
+    }
+    if (act === "show-users" && role) {
+      switchTab("users");
+      state.role = role.id;
+      renderRoleFilter();
+      renderUsers();
+    }
+  });
+
+  function dirtyNow(role) {
+    return state.draft && JSON.stringify(state.draft) !== JSON.stringify(role.perms);
+  }
+
+  $("#role-detail").addEventListener("change", function (e) {
+    var cb = e.target.closest('input[type="checkbox"][data-module]');
+    if (!cb || !state.draft) return;
+    var mod = cb.getAttribute("data-module");
+    var kind = cb.getAttribute("data-kind");
+    var p = state.draft[mod] || { view: false, edit: false };
+
+    if (kind === "edit") {
+      p.edit = cb.checked;
+      if (cb.checked) p.view = true;
+    } else {
+      p.view = cb.checked;
+      if (!cb.checked) p.edit = false;
+    }
+    state.draft[mod] = p;
+
+    var row = cb.closest("tr");
+    var viewCb = row.querySelector('input[data-kind="view"]');
+    var editCb = row.querySelector('input[data-kind="edit"]');
+    viewCb.checked = p.view;
+    editCb.checked = p.edit;
+    editCb.disabled = !p.view;
+
+    var saveBtn = $("#role-detail button[data-act='save']");
+    var hint = $("#role-detail .save-bar .hint");
+    var dirty = dirtyNow(roleById(state.selectedRole));
+    if (saveBtn) saveBtn.disabled = !dirty;
+    if (hint) hint.textContent = dirty ? "変更内容は保存されていません。" : "変更はありません。";
+  });
+
+  function confirmRoleSave(role) {
+    var diffs = MODULES.filter(function (m) {
+      return permLabel(role.perms[m.id]) !== permLabel(state.draft[m.id]);
+    });
+    if (!diffs.length) { toast("変更はありません"); return; }
+    var s = roleStats(role.id);
+    var allEmpty = MODULES.every(function (m) { return !state.draft[m.id].view && !state.draft[m.id].edit; });
+
+    openModal(
+      '<div class="modal-head"><h4>権限を更新しますか？</h4>' +
+      "<p>この変更は直ちに反映され、対象 " + s.total + " 名（有効 " + s.active + " 名）の権限が変わります。</p></div>" +
+      '<div class="modal-body">' +
+      '<div class="impact">' + diffs.map(function (m) {
+        return esc(m.name) + "：" + permLabel(role.perms[m.id]) + " → " + permLabel(state.draft[m.id]);
+      }).join("<br />") + "</div>" +
+      (allEmpty ? '<div class="impact" style="background:var(--red-weak);border-color:var(--red-line);color:var(--red)">このロールのユーザーはどの業務画面にもアクセスできなくなります。</div>' : "") +
+      '<p class="small muted">保存後、対象ユーザーの次回リクエストから新しい権限で判定されます。監査ログに記録されます。</p>' +
+      "</div>" +
+      '<div class="modal-foot"><button class="btn" type="button" id="m-cancel">キャンセル</button>' +
+      '<button class="btn primary" type="button" id="m-apply">更新する</button></div>'
+    );
+    $("#m-cancel", modal).addEventListener("click", closeModal);
+    $("#m-apply", modal).addEventListener("click", function () {
+      role.perms = JSON.parse(JSON.stringify(state.draft));
+      role.updatedAt = nowStr();
+      state.roleEditing = false;
+      state.draft = null;
+      closeModal();
+      renderRoles();
+      toast("権限を更新しました（対象 " + s.total + " 名）", "ok");
+    });
+  }
+
+  /* ---------------- tabs / toc ---------------- */
+  function switchTab(tab) {
+    if (state.tab === "roles" && tab !== "roles" && state.roleEditing && dirtyNow(roleById(state.selectedRole))) {
+      if (!window.confirm("保存していない権限の変更を破棄しますか？")) return;
+      state.roleEditing = false;
+      state.draft = null;
+    }
+    state.tab = tab;
+    $$(".proto-tab").forEach(function (b) {
+      b.classList.toggle("active", b.getAttribute("data-tab") === tab);
+    });
+    $("#tab-users").hidden = tab !== "users";
+    $("#tab-roles").hidden = tab !== "roles";
+    $("#proto-url").textContent = tab === "users" ? "/permissions/users" : "/permissions/roles";
+    if (tab === "roles") renderRoles();
+  }
+  $$(".proto-tab").forEach(function (b) {
+    b.addEventListener("click", function () { switchTab(b.getAttribute("data-tab")); });
+  });
+
+  var tocLinks = $$("#toc a");
+  function syncToc() {
+    var y = window.scrollY + 140;
+    var current = tocLinks[0];
+    tocLinks.forEach(function (a) {
+      var el = document.querySelector(a.getAttribute("href"));
+      if (el && el.offsetTop <= y) current = a;
+    });
+    tocLinks.forEach(function (a) { a.classList.toggle("active", a === current); });
+  }
+  window.addEventListener("scroll", syncToc, { passive: true });
+
+  renderRoleFilter();
+  renderUsers();
+  renderRoles();
+  syncToc();
+})();
+</script>
+</body>
+</html>

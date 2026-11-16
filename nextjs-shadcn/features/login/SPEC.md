@@ -71,8 +71,9 @@
   - 成功: 302 且 `Location` 不含 `?error`；sessionId 取 POST 响应的新 `Set-Cookie`（认证成功后 Spring 默认轮换 session id），无则回退 Step 1 的 id。
   - 失败: `Location` 含 `?error` / 401 / 200 登录页 HTML → 统一映射为 401 `Invalid username or password`；403（如 CSRF token 缺失）与其余异常 → 502 `Malformed response from auth provider`，**绝不视为成功**。
 - Better Auth 凭据端点: `POST /api/auth/sign-in/credentials`（由 plugin 注册，body 同 inputSchema）。
-- 环境变量: `BETTER_AUTH_SECRET`、`NEXT_PUBLIC_APP_URL`、`THIRD_PARTY_API_URL`、`SPRING_SESSION_COOKIE_NAME`（默认 `SESSION`，见 `.env.local`）。
+- 环境变量: `BETTER_AUTH_SECRET`、`NEXT_PUBLIC_APP_URL`、`THIRD_PARTY_API_URL`、`SPRING_SESSION_COOKIE_NAME`（默认 `SESSION`）、`PERMISSIONS_API_PATH`（默认 `/api/me`），见 `.env.local`。
 - 存储: sessionId 存于 Better Auth 会话（HttpOnly cookie）的 `user.token`，同时由 `hooks.after` 在登录成功时种同名独立 HttpOnly cookie、登出时清除；前端 JS 不可读，调用 Spring 受保护接口须经 Next 服务端读取后以 `Cookie: <name>=<id>` 转发。
+- 权限: 登录成功后额外请求后端用户信息接口（`PERMISSIONS_API_PATH`，默认 `/api/me`），宽松提取 `permissions` / `authorities` / `roles` 写入会话的 `user.permissions`，供 API 共通中转层做权限校验；拉取失败不阻断登录，权限为 `[]`。
 
 ## 风险与依赖
 

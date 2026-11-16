@@ -8,6 +8,9 @@ import { credentialsSchema } from "./auth-schema"
 const thirdPartyApiUrl = process.env.THIRD_PARTY_API_URL?.replace(/\/+$/, "")
 const springSessionCookieName =
   process.env.SPRING_SESSION_COOKIE_NAME?.trim() || "SESSION"
+/** 登录后拉取当前用户权限码的后端接口（默认 /api/me） */
+const permissionsApiPath =
+  process.env.PERMISSIONS_API_PATH?.trim() || "/api/me"
 
 /**
  * 从响应头中读取 Spring Session 的 cookie 值（默认 cookie 名 SESSION / JSESSIONID）。
@@ -29,6 +32,94 @@ function readCsrfToken(html: string): string | undefined {
     /name="_csrf"[^>]*value="([^"]+)"/.exec(html)?.[1] ??
     /value="([^"]+)"[^>]*name="_csrf"/.exec(html)?.[1]
   )
+}
+
+/** 把字符串数组或 Spring `[{ authority }]` 形式统一成权限码数组。 */
+function toStringArray(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) {
+    return undefined
+  }
+  const codes = value
+    .map((item) => {
+      if (typeof item === "string") {
+        return item
+      }
+      if (
+        item &&
+        typeof item === "object" &&
+        typeof (item as { authority?: unknown }).authority === "string"
+      ) {
+        return (item as { authority: string }).authority
+      }
+      return undefined
+    })
+    .filter((code): code is string => Boolean(code))
+
+  return codes.length > 0 ? codes : undefined
+}
+
+/**
+ * 从后端用户信息接口的响应中宽松提取权限码。
+ *
+ * 依次尝试：顶层字符串数组 → `permissions` → `authorities` → `roles`，
+ * 以及一层 `{ data: {...} }` 包装（本项目统一响应包约定）。
+ */
+function readPermissionCodes(payload: unknown): string[] {
+  const direct = toStringArray(payload)
+  if (direct) {
+    return direct
+  }
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    return []
+  }
+
+  const record = payload as Record<string, unknown>
+  const candidates: Record<string, unknown>[] = [record]
+
+  const nested = record.data
+  if (nested && typeof nested === "object" && !Array.isArray(nested)) {
+    candidates.push(nested as Record<string, unknown>)
+  }
+
+  for (const candidate of candidates) {
+    for (const key of ["permissions", "authorities", "roles"]) {
+      const codes = toStringArray(candidate[key])
+      if (codes) {
+        return codes
+      }
+    }
+  }
+
+  return []
+}
+
+/**
+ * 登录成功后拉取当前用户权限码（供 API 中转层校验）。
+ *
+ * 接口路径由 `PERMISSIONS_API_PATH` 配置（默认 `/api/me`）。
+ * 拉取失败不阻断登录，返回空数组（受权限保护的接口将返回 403，属预期）。
+ */
+async function fetchPermissions(
+  baseUrl: string,
+  path: string,
+  sessionId: string,
+): Promise<string[]> {
+  try {
+    const res = await fetch(`${baseUrl}${path}`, {
+      headers: {
+        Accept: "application/json",
+        Cookie: `${springSessionCookieName}=${sessionId}`,
+      },
+      cache: "no-store",
+      signal: AbortSignal.timeout(3000),
+    })
+    if (!res.ok) {
+      return []
+    }
+    return readPermissionCodes(await res.json())
+  } catch {
+    return []
+  }
 }
 
 /**
@@ -60,6 +151,11 @@ export const auth = betterAuth({
     additionalFields: {
       token: {
         type: "string",
+        required: false,
+        returned: true,
+      },
+      permissions: {
+        type: "string[]",
         required: false,
         returned: true,
       },
@@ -161,6 +257,11 @@ export const auth = betterAuth({
               email: parsed.username,
               name: parsed.username,
               token: sessionId,
+              permissions: await fetchPermissions(
+                thirdPartyApiUrl,
+                permissionsApiPath,
+                sessionId,
+              ),
             }
           }
         }
