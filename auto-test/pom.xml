@@ -25,18 +25,15 @@
         <serenity.maven.version>5.3.10</serenity.maven.version>
         <oracle.jdbc.version>23.8.0.25.04</oracle.jdbc.version>
         <commons.exec.version>1.4.0</commons.exec.version>
+        <poi.version>5.4.1</poi.version>
+        <hutool.version>5.8.48</hutool.version>
         <tags/>
     </properties>
 
     <dependencies>
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-jdbc</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-jdbc</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -59,12 +56,6 @@
         </dependency>
         <dependency>
             <groupId>net.serenity-bdd</groupId>
-            <artifactId>serenity-screenplay</artifactId>
-            <version>${serenity.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>net.serenity-bdd</groupId>
             <artifactId>serenity-screenplay-rest</artifactId>
             <version>${serenity.version}</version>
             <scope>test</scope>
@@ -73,6 +64,18 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-exec</artifactId>
             <version>${commons.exec.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>${poi.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-all</artifactId>
+            <version>${hutool.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>

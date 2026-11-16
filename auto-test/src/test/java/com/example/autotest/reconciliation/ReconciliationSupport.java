@@ -1,6 +1,9 @@
 package com.example.autotest.reconciliation;
 
+import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.util.StrUtil;
 import com.example.autotest.config.TestSettings;
+import com.example.autotest.support.BatchFileValidationSupport;
 import net.serenitybdd.annotations.Step;
 import org.apache.commons.exec.CommandLine;
 import org.apache.commons.exec.DefaultExecutor;
@@ -16,20 +19,27 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.LongStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ReconciliationSupport {
 
+    private static final AtomicInteger RUN_SEQUENCE = new AtomicInteger();
+    private static final DateTimeFormatter LOG_TIMESTAMP =
+            DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss-SSS");
+
     private final TestSettings settings;
     private final JdbcTemplate jdbcTemplate;
+    private final BatchFileValidationSupport fileValidation = new BatchFileValidationSupport();
 
     private BatchResult result;
 
@@ -83,6 +93,7 @@ public class ReconciliationSupport {
     @Step("执行业务日期为 {0} 的批处理")
     public void runBatch(String businessDate) throws IOException {
         Path shellPath = Path.of(settings.batchShellPath()).toAbsolutePath().normalize();
+        Path logFile = newLogFile();
         CommandLine commandLine = new CommandLine("bash");
         commandLine.addArgument(shellPath.toString(), false);
         commandLine.addArgument("--date", false);
@@ -101,18 +112,20 @@ public class ReconciliationSupport {
         executor.setExitValues(new int[0]);
 
         try {
-            int exitCode = executor.execute(commandLine, batchEnvironment());
+            int exitCode = executor.execute(commandLine, batchEnvironment(logFile));
             result = new BatchResult(
                     exitCode,
                     stdout.toString(StandardCharsets.UTF_8),
                     stderr.toString(StandardCharsets.UTF_8),
-                    false);
+                    false,
+                    logFile);
         } catch (ExecuteException exception) {
             result = new BatchResult(
                     exception.getExitValue(),
                     stdout.toString(StandardCharsets.UTF_8),
                     stderr.toString(StandardCharsets.UTF_8),
-                    watchdog.killedProcess());
+                    watchdog.killedProcess(),
+                    logFile);
         }
     }
 
@@ -131,16 +144,12 @@ public class ReconciliationSupport {
 
     @Step("日志应包含: {0}")
     public void logShouldContain(String expected) throws IOException {
-        assertThat(readLog())
-                .as("批处理日志缺少预期内容")
-                .contains(expected);
+        fileValidation.logShouldContain(currentLogFile(), expected);
     }
 
     @Step("日志不应包含: {0}")
     public void logShouldNotContain(String unexpected) throws IOException {
-        assertThat(readLog())
-                .as("批处理日志包含异常内容")
-                .doesNotContain(unexpected);
+        fileValidation.logShouldNotContain(currentLogFile(), unexpected);
     }
 
     @Step("汇总表中应有 {0} 条对账记录")
@@ -160,37 +169,47 @@ public class ReconciliationSupport {
         assertThat(actual).isEqualTo(expected);
     }
 
-    private Map<String, String> batchEnvironment() {
+    private Path newLogFile() {
+        FileUtil.mkdir(settings.batchLogDirectory().toFile());
+        String fileName = StrUtil.format("reconciliation-{}-{}.log",
+                LocalDateTime.now().format(LOG_TIMESTAMP),
+                StrUtil.padPre(String.valueOf(RUN_SEQUENCE.incrementAndGet()), 2, '0'));
+        return settings.batchLogFile(fileName);
+    }
+
+    private Path currentLogFile() {
+        assertThat(result)
+                .as("批处理尚未执行，无法校验日志")
+                .isNotNull();
+        return result.logFile();
+    }
+
+    private Map<String, String> batchEnvironment(Path logFile) {
         Map<String, String> environment = new HashMap<>(System.getenv());
         environment.put("DB_KIND", settings.dbKind());
         environment.put("JDBC_URL", settings.dbUrl());
         environment.put("JDBC_USER", settings.dbUser());
         environment.put("JDBC_PASSWORD", settings.dbPassword());
         environment.put("JDBC_DRIVER_JAR", settings.jdbcDriverJar());
-        environment.put("BATCH_LOG_FILE", settings.batchLogFile().toString());
+        environment.put("BATCH_LOG_FILE", logFile.toString());
         return environment;
-    }
-
-    private String readLog() throws IOException {
-        Path logPath = settings.batchLogFile();
-        assertThat(logPath).as("批处理日志不存在").exists();
-        return Files.readString(logPath);
     }
 
     private record BatchResult(
             int exitCode,
             String stdout,
             String stderr,
-            boolean timedOut) {
+            boolean timedOut,
+            Path logFile) {
 
         private String diagnosticText() {
             return """
-                    exitCode=%d, timedOut=%s
+                    exitCode=%d, timedOut=%s, logFile=%s
                     stdout:
                     %s
                     stderr:
                     %s
-                    """.formatted(exitCode, timedOut, stdout, stderr);
+                    """.formatted(exitCode, timedOut, logFile, stdout, stderr);
         }
     }
 }

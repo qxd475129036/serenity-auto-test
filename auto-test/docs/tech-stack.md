@@ -12,6 +12,8 @@
 | Oracle ojdbc17 | 23.8.0.25.04 | test scope |
 | H2 | Spring Boot parent 管理 | test scope |
 | Apache Commons Exec | 1.4.0 | test scope，执行批处理 shell |
+| Apache POI | 5.4.1 | test scope，读取 XLSX 批处理产物 |
+| Hutool | 5.8.48 | test scope，文件/字符串/CSV/Excel 工具 |
 
 全部依赖为 `test` scope，本工程是纯测试工程。
 
@@ -25,6 +27,8 @@
 | spring-boot-starter-jdbc | `JdbcTemplate` + `DriverManagerDataSource` + `ResourceDatabasePopulator` |
 | h2 / ojdbc17 | 本地 H2（Oracle 模式）/ staging Oracle |
 | commons-exec | `CommandLine` + `ExecuteWatchdog` 执行批处理 shell |
+| poi-ooxml | XLSX 单元格与整表断言 |
+| hutool-all | 日志与产物文件读取、CSV 解析、Excel 打开与工作表定位 |
 
 ## 构建与运行
 

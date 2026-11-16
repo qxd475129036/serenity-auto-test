@@ -52,7 +52,7 @@ export BATCH_DATE='2026-10-31'
 
 - 接受 `--date <业务日期>`（未知参数 → 退出码 64）
 - 退出码 `0` = 成功，非零 = 失败（本地脚本：`2` = 模拟失败，`3` = DB_KIND 不是 h2，`64` = 参数错误）
-- 日志写入 `BATCH_LOG_FILE`（默认 `target/batch-logs/reconciliation.log`）
+- 日志写入测试传入的 `BATCH_LOG_FILE`（每次运行唯一：`{batch.log.dir}/reconciliation-{时间戳}-{序号}.log`）
 - 接收环境变量 `DB_KIND` / `JDBC_URL` / `JDBC_USER` / `JDBC_PASSWORD` / `JDBC_DRIVER_JAR`
 - 超时由 `batch.timeout.seconds` 控制（test 30 秒，staging 600 秒）
 

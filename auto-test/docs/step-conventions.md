@@ -103,5 +103,6 @@ if (settings.initializeDatabase()) {
 - commons-exec 执行：`CommandLine` + `DefaultExecutor` + `ExecuteWatchdog`（超时 `settings.batchTimeoutSeconds()`），工作目录为工程根
 - 通过环境变量把数据库连接注入脚本：`DB_KIND` / `JDBC_URL` / `JDBC_USER` / `JDBC_PASSWORD` / `JDBC_DRIVER_JAR` / `BATCH_LOG_FILE`
 - 业务参数用 `--date <业务日期>` 传递（本地脚本中 `FAIL` 触发模拟失败）
-- 结果存私有 `BatchResult`（exitCode / stdout / stderr / 是否超时），断言步骤读取它做断言
+- 结果存私有 `BatchResult`（exitCode / stdout / stderr / 是否超时 / 本次日志路径），断言步骤读取它做断言
+- 日志按运行隔离：每次执行生成唯一 `BATCH_LOG_FILE`（`reconciliation-{时间戳}-{序号}.log`），避免多用例共用日志互相污染；log/txt 用 Hutool `FileUtil` + `IoUtil.lineIter` 流式校验，命中即停并限制失败诊断长度；CSV/Excel 用 Hutool `CsvReader` / `ExcelReader` 读取
 - 批处理脚本契约（退出码、日志位置）见 [verification.md](verification.md)

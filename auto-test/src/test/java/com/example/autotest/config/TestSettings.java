@@ -58,10 +58,18 @@ public final class TestSettings {
         return required("batch.shell.path", "BATCH_SHELL_PATH");
     }
 
-    public Path batchLogFile() {
+    public Path batchLogDirectory() {
         return Path.of(required("batch.log.dir", "BATCH_LOG_DIR"))
                 .toAbsolutePath()
-                .resolve("reconciliation.log");
+                .normalize();
+    }
+
+    public Path batchLogFile(String fileName) {
+        if (fileName == null || fileName.isBlank()
+                || !Path.of(fileName).getFileName().toString().equals(fileName)) {
+            throw new IllegalArgumentException("Invalid batch log file name: " + fileName);
+        }
+        return batchLogDirectory().resolve(fileName);
     }
 
     public String batchDate() {

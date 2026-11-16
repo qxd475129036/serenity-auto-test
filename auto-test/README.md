@@ -139,7 +139,7 @@ export BATCH_DATE='2026-10-31'
 
 - 接受 `--date <business-date>`。
 - 成功时返回退出码 `0`，失败时返回非零退出码。
-- 将日志写入 `BATCH_LOG_DIR/reconciliation.log`。
+- 将日志写入测试传入的 `BATCH_LOG_FILE`（每次运行唯一，位于 `BATCH_LOG_DIR` 下）。
 - 接收 `DB_KIND`、`JDBC_URL`、`JDBC_USER`、`JDBC_PASSWORD` 等环境变量。
 
 超时由 `-Dbatch.timeout.seconds=...` 控制。
