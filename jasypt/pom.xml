@@ -14,38 +14,17 @@
     <groupId>com.example</groupId>
     <artifactId>jasypt</artifactId>
     <version>0.0.1-SNAPSHOT</version>
+    <packaging>pom</packaging>
     <name>jasypt</name>
-    <description>Jasypt encrypt/decrypt REST service</description>
+    <description>Jasypt 加解密示例：可复用核心库 + Spring Boot Web 应用</description>
+
+    <modules>
+        <module>jasypt-core</module>
+        <module>jasypt-web</module>
+    </modules>
 
     <properties>
         <java.version>25</java.version>
+        <jasypt.version>1.9.3</jasypt.version>
     </properties>
-
-    <dependencies>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.jasypt</groupId>
-            <artifactId>jasypt</artifactId>
-            <version>1.9.3</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-            </plugin>
-        </plugins>
-    </build>
 </project>
