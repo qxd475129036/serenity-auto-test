@@ -21,6 +21,8 @@
     <modules>
         <module>jasypt-core</module>
         <module>jasypt-web</module>
+        <module>jasypt-spring-boot3-starter</module>
+        <module>jasypt-spring-boot2-starter</module>
     </modules>
 
     <properties>

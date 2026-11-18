@@ -1,0 +1,12 @@
+server:
+  port: 8083
+
+demo:
+  # 与 Boot 3 示例相同的密文，由 jasypt-core / 操作页面以密钥 demo-secret-key 生成
+  secret: "ENC(LcX9FokeFRJxxbiJi0nz47ioGIXywm2Zol7suf/vmVMQPzdHkDnMidsgvQwSkJLxvFSk3ZLRGugamnVYSM1hCg==)"
+
+# 密钥不写在这里，启动时通过
+#   JASYPT_ENCRYPTOR_PASSWORD=demo-secret-key java -jar ...
+# 或
+#   java -jar ... --jasypt.encryptor.password=demo-secret-key
+# 传入

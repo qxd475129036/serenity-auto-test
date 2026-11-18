@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.example</groupId>
+        <artifactId>jasypt</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>jasypt-spring-boot3-starter</artifactId>
+    <name>jasypt-spring-boot3-starter</name>
+    <description>基于 ulisesbocchio/jasypt-spring-boot 的自动解密 starter</description>
+
+    <properties>
+        <!-- Boot 3 starter 的编译与运行目标：Java 21；不影响 Java 8 的 jasypt-core -->
+        <java.version>21</java.version>
+        <maven.compiler.release>21</maven.compiler.release>
+        <jasypt-spring-boot.version>4.0.4</jasypt-spring-boot.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.example</groupId>
+            <artifactId>jasypt-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <!-- 传递上游 starter：其 AutoConfiguration.imports 会在 Boot 3 启动时自动生效 -->
+            <groupId>com.github.ulisesbocchio</groupId>
+            <artifactId>jasypt-spring-boot-starter</artifactId>
+            <version>${jasypt-spring-boot.version}</version>
+        </dependency>
+    </dependencies>
+</project>
