@@ -2,9 +2,11 @@ package com.example.jasypt.controller;
 
 import com.example.jasypt.dto.CryptoRequest;
 import com.example.jasypt.dto.CryptoResponse;
+import com.example.jasypt.dto.KeyResponse;
 import com.example.jasypt.service.CryptoService;
 import org.jasypt.exceptions.EncryptionOperationNotPossibleException;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,6 +22,13 @@ public class CryptoController {
 
     public CryptoController(CryptoService cryptoService) {
         this.cryptoService = cryptoService;
+    }
+
+    @GetMapping("/key")
+    public ResponseEntity<KeyResponse> generateKey() {
+        return ResponseEntity.ok()
+                .header("Cache-Control", "no-store")
+                .body(new KeyResponse(cryptoService.generateKey()));
     }
 
     @PostMapping("/encrypt")

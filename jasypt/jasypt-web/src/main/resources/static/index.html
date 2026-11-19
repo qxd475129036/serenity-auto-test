@@ -179,6 +179,37 @@
 
         .toggle-key:hover { background: #f3f4f6; color: var(--text); }
 
+        .key-tools {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 2px;
+        }
+
+        .key-btn {
+            border: 1px solid var(--border);
+            background: #fff;
+            color: var(--primary);
+            border-radius: 7px;
+            padding: 4px 10px;
+            font-size: 12px;
+            font-family: inherit;
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s;
+        }
+
+        .key-btn:hover {
+            background: var(--primary-soft);
+            border-color: #c7d2fe;
+        }
+
+        .key-warning {
+            margin: 0;
+            font-size: 12px;
+            color: #b45309;
+        }
+
         .actions {
             display: flex;
             align-items: center;
@@ -365,6 +396,11 @@
                         <button type="button" class="toggle-key" data-toggle="encrypt-password"
                                 aria-label="显示或隐藏密钥">显示</button>
                     </div>
+                    <div class="key-tools">
+                        <button type="button" class="key-btn" data-generate="encrypt-password">随机生成 32 位</button>
+                        <button type="button" class="key-btn" data-copy-key="encrypt-password">复制密钥</button>
+                    </div>
+                    <p class="key-warning">注意：请妥善保存密钥，密钥丢失后已加密的密文将无法恢复。</p>
                 </div>
 
                 <div class="actions">
@@ -422,6 +458,11 @@
                         <button type="button" class="toggle-key" data-toggle="decrypt-password"
                                 aria-label="显示或隐藏密钥">显示</button>
                     </div>
+                    <div class="key-tools">
+                        <button type="button" class="key-btn" data-generate="decrypt-password">随机生成 32 位</button>
+                        <button type="button" class="key-btn" data-copy-key="decrypt-password">复制密钥</button>
+                    </div>
+                    <p class="key-warning">注意：请妥善保存密钥，密钥丢失后已加密的密文将无法恢复。</p>
                 </div>
 
                 <div class="actions">
@@ -469,6 +510,29 @@
             toastTimer = setTimeout(function () {
                 toast.classList.remove('visible');
             }, 1600);
+        }
+
+        async function copyText(value, successMessage) {
+            if (!value) {
+                return;
+            }
+            try {
+                if (navigator.clipboard && window.isSecureContext) {
+                    await navigator.clipboard.writeText(value);
+                } else {
+                    const temp = document.createElement('textarea');
+                    temp.value = value;
+                    temp.style.position = 'fixed';
+                    temp.style.opacity = '0';
+                    document.body.appendChild(temp);
+                    temp.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(temp);
+                }
+                showToast(successMessage);
+            } catch (e) {
+                showToast('复制失败，请手动选择文本复制');
+            }
         }
 
         function showAlert(panel, message) {
@@ -565,30 +629,61 @@
             });
         });
 
-        document.querySelectorAll('[data-copy]').forEach(function (button) {
+        document.querySelectorAll('[data-generate]').forEach(function (button) {
             button.addEventListener('click', async function () {
-                const output = document.getElementById(button.dataset.copy);
-                const value = output.textContent;
-                if (!value) {
+                const targetId = button.dataset.generate;
+                const panel = targetId.split('-')[0];
+                const input = document.getElementById(targetId);
+                const originalText = button.textContent;
+                button.disabled = true;
+                button.textContent = '生成中…';
+                clearAlert(panel);
+                try {
+                    const response = await fetch('/api/key', {
+                        method: 'GET',
+                        cache: 'no-store'
+                    });
+                    let data = null;
+                    try {
+                        data = await response.json();
+                    } catch (e) {
+                        data = null;
+                    }
+                    if (!response.ok || !data || typeof data.key !== 'string') {
+                        showAlert(panel, '生成密钥失败，请稍后重试。');
+                        return;
+                    }
+                    input.value = data.key;
+                    input.type = 'text';
+                    const toggle = document.querySelector('[data-toggle="' + targetId + '"]');
+                    if (toggle) {
+                        toggle.textContent = '隐藏';
+                    }
+                    showToast('已生成 32 位安全随机密钥，请妥善保存；密钥丢失后密文无法恢复');
+                } catch (e) {
+                    showAlert(panel, '无法连接服务，请确认服务已启动后重试。');
+                } finally {
+                    button.disabled = false;
+                    button.textContent = originalText;
+                }
+            });
+        });
+
+        document.querySelectorAll('[data-copy-key]').forEach(function (button) {
+            button.addEventListener('click', function () {
+                const input = document.getElementById(button.dataset.copyKey);
+                if (!input || !input.value) {
+                    showToast('请先生成或输入密钥');
                     return;
                 }
-                try {
-                    if (navigator.clipboard && window.isSecureContext) {
-                        await navigator.clipboard.writeText(value);
-                    } else {
-                        const temp = document.createElement('textarea');
-                        temp.value = value;
-                        temp.style.position = 'fixed';
-                        temp.style.opacity = '0';
-                        document.body.appendChild(temp);
-                        temp.select();
-                        document.execCommand('copy');
-                        document.body.removeChild(temp);
-                    }
-                    showToast('已复制到剪贴板');
-                } catch (e) {
-                    showToast('复制失败，请手动选择文本复制');
-                }
+                copyText(input.value, '密钥已复制，请妥善保存');
+            });
+        });
+
+        document.querySelectorAll('[data-copy]').forEach(function (button) {
+            button.addEventListener('click', function () {
+                const output = document.getElementById(button.dataset.copy);
+                copyText(output.textContent, '已复制到剪贴板');
             });
         });
     })();
