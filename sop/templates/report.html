@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ title }} · {{ generated_at }}</title>
+<style>
+  :root {
+    --bg: #f5f6f8;
+    --card: #ffffff;
+    --text: #1f2328;
+    --muted: #6b7280;
+    --line: #e5e7eb;
+    --green: #15803d;
+    --green-bg: #ecfdf3;
+    --red: #b42318;
+    --red-bg: #fef3f2;
+    --amber: #b54708;
+    --amber-bg: #fffaeb;
+    --blue: #1d4ed8;
+    --blue-bg: #eff4ff;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+      "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  .page { max-width: 1080px; margin: 0 auto; padding: 36px 20px 64px; }
+  header { margin-bottom: 24px; }
+  .eyebrow {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  h1 { font-size: 26px; margin: 6px 0 8px; font-weight: 650; letter-spacing: -.01em; }
+  .meta { color: var(--muted); font-size: 12px; display: flex; flex-wrap: wrap; gap: 6px 16px; }
+
+  .summary {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .card .label { color: var(--muted); font-size: 12px; }
+  .card .value { font-size: 22px; font-weight: 650; margin-top: 2px; }
+  .card .value.small { font-size: 17px; }
+  .card .unit { color: var(--muted); font-size: 14px; font-weight: 400; }
+  .card .sub { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .card.verdict.ok { background: var(--green-bg); border-color: #abefc6; }
+  .card.verdict.ok .value { color: var(--green); }
+  .card.verdict.bad { background: var(--red-bg); border-color: #fecdca; }
+  .card.verdict.bad .value { color: var(--red); }
+
+  .overview {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 24px;
+    font-size: 13px;
+  }
+  .overview th, .overview td {
+    text-align: left;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  .overview th { color: var(--muted); font-weight: 500; background: #fafbfc; }
+  .overview tr:last-child td { border-bottom: 0; }
+  .overview a { color: var(--blue); text-decoration: none; }
+  .overview a:hover { text-decoration: underline; }
+
+  .flow-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 22px 22px 14px;
+    margin-bottom: 20px;
+  }
+  .flow-card.failed { border-color: #fecdca; }
+  .flow-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+  .flow-head h2 { font-size: 18px; margin: 0; display: flex; align-items: center; gap: 8px; }
+  .flow-head .desc { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+  .dot.passed { background: var(--green); }
+  .dot.failed { background: var(--red); }
+  .flow-verdict {
+    font-size: 12px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .flow-verdict.passed { color: var(--green); background: var(--green-bg); }
+  .flow-verdict.failed { color: var(--red); background: var(--red-bg); }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0 4px; }
+  .chip {
+    font-size: 11px;
+    color: var(--muted);
+    background: #f8f9fa;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 2px 8px;
+  }
+  .chip.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .chip.link { color: var(--blue); text-decoration: none; background: var(--blue-bg); border-color: #c7d7fe; }
+
+  .error-banner {
+    margin: 12px 0;
+    padding: 10px 14px;
+    border-radius: 8px;
+    background: var(--red-bg);
+    color: var(--red);
+    border: 1px solid #fecdca;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+    white-space: pre-wrap;
+  }
+  .warn-banner {
+    margin: 8px 0;
+    padding: 8px 14px;
+    border-radius: 8px;
+    background: var(--amber-bg);
+    color: var(--amber);
+    border: 1px solid #fedf89;
+    font-size: 12px;
+  }
+
+  .timeline { margin-top: 16px; border-left: 2px solid var(--line); padding-left: 18px; }
+  .step { position: relative; padding: 10px 0 14px; border-bottom: 1px dashed var(--line); }
+  .step:last-child { border-bottom: 0; }
+  .step-marker {
+    position: absolute;
+    left: -29px;
+    top: 12px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #fff;
+    border: 2px solid var(--line);
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .step.passed .step-marker { border-color: #86efac; color: var(--green); }
+  .step.failed .step-marker { border-color: #fca5a5; color: var(--red); }
+  .step.warn .step-marker { border-color: #fcd34d; color: var(--amber); }
+  .step.skipped { opacity: .55; }
+
+  .step-top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; }
+  .action {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 11px;
+    color: var(--blue);
+    background: var(--blue-bg);
+    border-radius: 5px;
+    padding: 1px 7px;
+  }
+  .step-name { font-weight: 550; }
+  .status { font-size: 11px; padding: 1px 8px; border-radius: 999px; }
+  .status.passed { color: var(--green); background: var(--green-bg); }
+  .status.failed { color: var(--red); background: var(--red-bg); }
+  .status.warn { color: var(--amber); background: var(--amber-bg); }
+  .status.skipped { color: var(--muted); background: #f3f4f6; }
+  .time { color: var(--muted); font-size: 11px; margin-left: auto; }
+  .step-error {
+    margin-top: 6px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+    color: var(--red);
+    white-space: pre-wrap;
+  }
+
+  .shots { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px; }
+  .shots figure { margin: 0; }
+  .shots img {
+    display: block;
+    width: 236px;
+    max-height: 150px;
+    object-fit: cover;
+    object-position: top;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    background: #fff;
+    cursor: zoom-in;
+  }
+  .shots img:hover { border-color: #93c5fd; }
+  .shots figcaption { color: var(--muted); font-size: 11px; margin-top: 3px; max-width: 236px; }
+  .missing { width: 236px; height: 90px; display: flex; align-items: center; justify-content: center; color: var(--muted); border: 1px dashed var(--line); border-radius: 7px; font-size: 12px; }
+
+  .failure {
+    margin-top: 12px;
+    border: 1px solid #fecdca;
+    background: #fffbfa;
+    border-radius: 8px;
+    padding: 12px 14px;
+  }
+  .failure-title { color: var(--red); font-weight: 600; font-size: 12px; margin-bottom: 8px; }
+  .failure-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .sub-title { color: var(--muted); font-size: 11px; margin-bottom: 4px; }
+  .failure pre, .logs pre {
+    margin: 0;
+    background: #0f172a;
+    color: #e2e8f0;
+    border-radius: 7px;
+    padding: 10px 12px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 11px;
+    line-height: 1.55;
+    overflow: auto;
+    max-height: 320px;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .failure .dom { max-height: 420px; }
+  details summary { cursor: pointer; color: var(--muted); font-size: 12px; }
+  details[open] summary { margin-bottom: 6px; }
+  .logs { margin-top: 8px; }
+  .flow-console { margin-top: 14px; }
+
+  footer { color: var(--muted); font-size: 11px; text-align: center; margin-top: 28px; }
+
+  dialog#lightbox {
+    border: 0;
+    border-radius: 10px;
+    padding: 12px;
+    max-width: 94vw;
+    max-height: 94vh;
+    background: #111827;
+  }
+  dialog#lightbox::backdrop { background: rgba(15, 23, 42, .72); }
+  dialog#lightbox img { display: block; max-width: 90vw; max-height: 84vh; border-radius: 6px; }
+  dialog#lightbox .close {
+    float: right;
+    margin-bottom: 8px;
+    background: #374151;
+    color: #fff;
+    border: 0;
+    border-radius: 6px;
+    padding: 4px 10px;
+    cursor: pointer;
+  }
+
+  @media (max-width: 760px) {
+    .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .page { padding: 24px 12px 48px; }
+    .flow-card { padding: 16px 14px 10px; }
+    .shots img { width: 100%; max-height: 180px; }
+    .shots figure { width: 100%; }
+  }
+  @media print {
+    body { background: #fff; }
+    .flow-card, .card, .overview { break-inside: avoid; }
+    .shots img { cursor: default; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <div class="eyebrow">sop · browser RPA report</div>
+    <h1>{{ title }}</h1>
+    <div class="meta">
+      <span>生成于 {{ generated_at }}</span>
+      <span>sop v{{ tool_version }}</span>
+      {% if batch %}<span>批量执行 · {{ totals.flows }} 个流程</span>{% endif %}
+      <span>截图策略 {{ flows[0].shots }}</span>
+    </div>
+  </header>
+
+  <section class="summary">
+    <div class="card verdict {{ 'ok' if totals.ok else 'bad' }}">
+      <div class="label">总体结果</div>
+      <div class="value">{{ '全部通过' if totals.ok else '存在失败' }}</div>
+      <div class="sub">{{ totals.flows_passed }} / {{ totals.flows }} 个流程通过</div>
+    </div>
+    <div class="card">
+      <div class="label">步骤</div>
+      <div class="value">{{ totals.passed }}<span class="unit"> / {{ totals.steps }}</span></div>
+      <div class="sub">
+        失败 {{ totals.failed }}{% if totals.warn %} · 警告 {{ totals.warn }}{% endif %}{% if totals.skipped %} · 跳过 {{ totals.skipped }}{% endif %}
+      </div>
+    </div>
+    <div class="card">
+      <div class="label">总耗时</div>
+      <div class="value">{{ totals.duration_text }}</div>
+    </div>
+    <div class="card">
+      <div class="label">环境</div>
+      <div class="value small">{{ flows[0].env }}</div>
+      <div class="sub">{{ flows[0].base_url or '未配置 base_url' }}</div>
+    </div>
+  </section>
+
+  {% if batch %}
+  <table class="overview">
+    <thead>
+      <tr><th>流程</th><th>结果</th><th>步骤</th><th>耗时</th><th>报告目录</th></tr>
+    </thead>
+    <tbody>
+      {% for flow in flows %}
+      <tr>
+        <td><a href="#flow-{{ loop.index }}">{{ flow.name }}</a></td>
+        <td><span class="status {{ flow.status }}">{{ flow.status_text }}</span></td>
+        <td>{{ flow.stats.passed }} / {{ flow.stats.total }}{% if flow.stats.failed %}（失败 {{ flow.stats.failed }}）{% endif %}</td>
+        <td>{{ flow.duration_text }}</td>
+        <td class="chip mono">{{ flow.run_dir }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  {% for flow in flows %}
+  <section class="flow-card {{ 'failed' if not flow.ok else '' }}" id="flow-{{ loop.index }}">
+    <div class="flow-head">
+      <div>
+        <h2><span class="dot {{ flow.status }}"></span>{{ flow.name }}</h2>
+        {% if flow.description %}<p class="desc">{{ flow.description }}</p>{% endif %}
+      </div>
+      <div class="flow-verdict {{ flow.status }}">{{ flow.status_text }}</div>
+    </div>
+
+    <div class="chips">
+      <span class="chip">env: {{ flow.env }}</span>
+      <span class="chip">{{ flow.browser }} · {{ flow.headed_text }}</span>
+      <span class="chip">截图策略: {{ flow.shots }}</span>
+      <span class="chip">耗时 {{ flow.duration_text }}</span>
+      <span class="chip">起始 {{ flow.started_text }}</span>
+      <span class="chip mono">{{ flow.run_dir }}</span>
+      {% if flow.trace %}<a class="chip link" href="{{ flow.trace }}">trace.zip</a>{% endif %}
+    </div>
+
+    {% if flow.error %}<div class="error-banner">{{ flow.error }}</div>{% endif %}
+    {% for warning in flow.warnings %}<div class="warn-banner">{{ warning }}</div>{% endfor %}
+
+    <div class="timeline">
+      {% for step in flow.steps %}
+      <article class="step {{ step.status }}">
+        <div class="step-marker">{{ step.index }}</div>
+        <div class="step-body">
+          <div class="step-top">
+            <span class="action">{{ step.action }}</span>
+            <span class="step-name">{{ step.name }}</span>
+            <span class="status {{ step.status }}">{{ step.status_text }}</span>
+            <span class="time">{{ step.duration_text }}{% if step.retried %} · 尝试 {{ step.attempts }} 次{% endif %}</span>
+          </div>
+
+          {% if step.error %}<div class="step-error">{{ step.error }}</div>{% endif %}
+
+          {% if step.shots %}
+          <div class="shots">
+            {% for shot in step.shots %}
+            <figure>
+              {% if shot.src %}
+              <img class="shot" src="{{ shot.src }}" alt="{{ shot.label }}" loading="lazy">
+              {% else %}
+              <div class="missing">图片缺失</div>
+              {% endif %}
+              <figcaption>{{ shot.label }}{% if shot.full_page %} · 全页{% endif %}</figcaption>
+            </figure>
+            {% endfor %}
+          </div>
+          {% endif %}
+
+          {% if step.failure %}
+          <div class="failure">
+            <div class="failure-title">失败现场</div>
+            <div class="failure-grid">
+              <div>
+                <div class="sub-title">控制台错误</div>
+                <pre>{{ step.failure.console }}</pre>
+              </div>
+              <div>
+                <div class="sub-title">DOM 快照（failure.html）</div>
+                <details open>
+                  <summary>展开 DOM 内容（最多 300KB）</summary>
+                  <pre class="dom">{{ step.failure.html_excerpt }}</pre>
+                </details>
+              </div>
+            </div>
+          </div>
+          {% endif %}
+
+          {% if step.logs %}
+          <details class="logs">
+            <summary>执行日志（{{ step.logs|length }} 条）</summary>
+            <pre>{% for line in step.logs %}{{ line }}
+{% endfor %}</pre>
+          </details>
+          {% endif %}
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+
+    {% if flow.console_errors %}
+    <details class="logs flow-console">
+      <summary>页面控制台错误（{{ flow.console_errors|length }} 条）</summary>
+      <pre>{% for line in flow.console_errors %}{{ line }}
+{% endfor %}</pre>
+    </details>
+    {% endif %}
+  </section>
+  {% endfor %}
+
+  <footer>由 sop v{{ tool_version }} 生成 · {{ generated_at }}</footer>
+</div>
+
+<dialog id="lightbox">
+  <form method="dialog"><button class="close">关闭</button></form>
+  <img id="lightbox-img" alt="截图预览">
+</dialog>
+<script>
+  (function () {
+    var dialog = document.getElementById('lightbox');
+    var preview = document.getElementById('lightbox-img');
+    document.querySelectorAll('img.shot').forEach(function (img) {
+      img.addEventListener('click', function () {
+        preview.src = img.src;
+        if (typeof dialog.showModal === 'function') {
+          dialog.showModal();
+        } else {
+          window.open(img.src, '_blank');
+        }
+      });
+    });
+    dialog.addEventListener('click', function (event) {
+      if (event.target === dialog) dialog.close();
+    });
+  })();
+</script>
+</body>
+</html>

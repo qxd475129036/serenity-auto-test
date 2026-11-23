@@ -1,0 +1,112 @@
+version: 1
+name: 05_recorded
+description: 由 sop record 录制
+env: dev
+locators:
+  textbox-明文:
+    role: textbox
+    name: 明文
+    exact: true
+  encrypt-form-button-随机生成-32-位:
+    role: button
+    name: 随机生成 32 位
+    exact: true
+    within:
+      css: '#encrypt-form'
+  button-加密:
+    role: button
+    name: 加密
+    exact: true
+  textbox-密文:
+    role: textbox
+    name: 密文
+    exact: true
+  encrypt-output:
+    css: '#encrypt-output'
+  decrypt-form-textbox-密钥:
+    role: textbox
+    name: 密钥
+    exact: true
+    within:
+      css: '#decrypt-form'
+  encrypt-form-textbox-密钥:
+    role: textbox
+    name: 密钥
+    exact: true
+    within:
+      css: '#encrypt-form'
+  decrypt-form-button-显示或隐藏密钥:
+    role: button
+    name: 显示或隐藏密钥
+    exact: true
+    within:
+      css: '#decrypt-form'
+  button-解密:
+    role: button
+    name: 解密
+    exact: true
+  decrypt-output:
+    css: '#decrypt-output'
+steps:
+- action: goto
+  name: 打开页面
+  url: http://localhost:8080
+- action: fill
+  name: 输入 明文
+  target: textbox-明文
+  value: '123456'
+- action: click
+  name: 点击 随机生成 32 位
+  target: encrypt-form-button-随机生成-32-位
+- action: click
+  name: 点击 加密
+  target: button-加密
+- action: fill
+  name: 输入 明文
+  target: textbox-明文
+  value: ''
+- action: extract
+  name: 提取 密文
+  target: textbox-密文
+  as: decrypt_text
+  attr: value
+- action: fill
+  name: 输入 密文
+  target: textbox-密文
+  value: neK73NnWcZuoybnQ+mSaFqsJEygrCCL232cpIJ4c1cOLGU6kfJhasgGgcV6fLf7a
+- action: extract
+  name: 提取 encrypt-output
+  target: encrypt-output
+  as: encrypt_output
+- action: fill
+  name: 输入 密文
+  target: textbox-密文
+  value: '{{encrypt_output}}'
+- action: extract
+  name: 提取 密钥
+  target: decrypt-form-textbox-密钥
+  as: decrypt_password
+  attr: value
+- action: fill
+  name: 输入 密钥
+  target: decrypt-form-textbox-密钥
+  value: '{{env.decrypt_password}}'
+- action: extract
+  name: 提取 密钥
+  target: encrypt-form-textbox-密钥
+  as: encrypt_password
+  attr: value
+- action: fill
+  name: 输入 密钥
+  target: decrypt-form-textbox-密钥
+  value: '{{encrypt_password}}'
+- action: click
+  name: 点击 显示或隐藏密钥
+  target: decrypt-form-button-显示或隐藏密钥
+- action: click
+  name: 点击 解密
+  target: button-解密
+- action: assert
+  name: 断言文本 123456
+  target: decrypt-output
+  text: '123456'

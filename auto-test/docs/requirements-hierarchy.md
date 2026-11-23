@@ -26,7 +26,6 @@ Serenity 按 class-level 注解字符串聚合测试结果，报告 Requirements
 订单服务 (@Epic, 包 order)
 └── 订单查询 (@Feature)
     ├── 按订单号查询订单 (@Story → OrderLookupStoryTest, 4 场景)
-    ├── 使用 Screenplay 查询订单 (@Story → OrderScreenplayStoryTest, 2 场景)
     └── 并行查询订单 (@Story → OrderParallelStoryTest, 4 场景)
 交易对账 (@Epic, 包 reconciliation)
 └── 日终批处理 (@Feature)
@@ -56,17 +55,16 @@ Serenity 按 class-level 注解字符串聚合测试结果，报告 Requirements
 ## 5. 聚合规则（为什么必须匹配已有字符串）
 
 - Serenity 按 `@Epic` + `@Feature` + `@Story` 三个字符串对测试结果分组；多个测试类共享相同 `@Epic` + `@Feature` 时聚合到同一 Feature
-- 现有示例：order 包 3 个测试类共享 `@Epic("订单服务")` + `@Feature("订单查询")` → 报告呈现 `1 个 Feature → 3 个 Story → 10 个 Scenario`
+- 现有示例：order 包 2 个测试类共享 `@Epic("订单服务")` + `@Feature("订单查询")` → 报告呈现 `1 个 Feature → 2 个 Story → 8 个 Scenario`
 - 反例：同一功能写成「订单查询」和「订单查询功能」，报告会劈裂出两个互不相干的 Feature
 
 ## 6. 标签词汇表
 
 | 标签 | 级别 | 含义 | 现有示例 |
 | --- | --- | --- | --- |
-| `demo` | class | 演示类测试，整 Story 参与筛选 | 现有 5 个演示类 |
+| `demo` | class | 演示类测试，整 Story 参与筛选 | 现有 4 个演示类 |
 | `smoke` | method | 核心成功路径 | 查询订单 1 |
 | `negative` | method | 异常 / 失败路径 | 查询不存在的订单返回 404 |
-| `screenplay` | method | Screenplay 模式场景 | Actor 执行 REST Task 并回答 Question |
 | `parallel` | method | 并发执行场景（必须配合 `@Execution(ExecutionMode.CONCURRENT)`） | 并行查询订单 1 |
 | `api` | method | 依赖真实外部 API（必须配合 `@EnabledIfSystemProperty`） | 查询配置的外部订单 |
 

@@ -48,9 +48,7 @@ ReconciliationSupport reconciliation;
 - 文件证据（报告生成可下载附件）：先写文件到 `target/` 下，再
   `Serenity.recordReportData().withTitle("演示证据文件").downloadable().fromFile(evidenceFile)`
 
-## 5. REST 两种模式
-
-**直调（默认选择）**：
+## 5. REST 直调
 
 ```java
 Response response = SerenityRest.given()
@@ -62,25 +60,17 @@ assertThat(response.statusCode()).isEqualTo(200);
 
 Serenity 自动把请求 URL、Header、响应体记录进报告；断言用 AssertJ 对 `Response`。
 
-**Screenplay（需要在报告中体现 Actor / Task / Question 时使用）**：
-
-- Actor：`Actor.named("测试工程师").describedAs("负责订单接口验证").whoCan(CallAnApi.at(baseUrl))`
-- Task：`implements Task`，`performAs` 用 `Get.resource(...).with(...)` 发请求，结果存 `actor.remember(...)`；**必须重写 `toString()` 返回中文**（它就是报告中显示的步骤文案，如「查询订单 1」）
-- Question：`implements Question<T>`，`answeredBy` 读 `actor.recall("key")`
-- 交互断言：`Ensure.that("订单 1 状态为 PAID", response -> response.statusCode(200).body("status", equalTo("PAID")))`，第一参数为中文
-- 测试类中：`tester.attemptsTo(task)` + `tester.asksFor(question)`
-
 **本地 stub**：`com.sun.net.httpserver.HttpServer`，绑定端口 `0`（自动取空闲端口），路径处理器返回 JSON；单例 `shared()` + 注册 shutdown hook（`LocalOrderApi` 模式）。
 
 ## 6. 外部 API 门控
 
-依赖真实外部服务的场景在方法上加 JUnit 条件：
+依赖真实外部服务的场景在测试方法内用 JUnit 假设跳过（静态导入 `org.junit.jupiter.api.Assumptions.assumeTrue`）：
 
 ```java
-@EnabledIfSystemProperty(named = "api.enabled", matches = "true")
+assumeTrue(settings.apiEnabled(), "api.enabled=false，跳过外部订单场景");
 ```
 
-默认 profile `api.enabled=false`，本地构建自动跳过这些场景、不影响构建；staging 置 true。
+`api.enabled` 在 `application.properties` 中默认 `false`，`application-staging.properties` 置 `true`；也可用 `-Dapi.enabled=true` 或环境变量 `API_ENABLED=true` 覆盖。不要再用 `@EnabledIfSystemProperty`，它只读 JVM 系统属性，读不到配置文件和环境变量。
 
 ## 7. 数据库模式
 

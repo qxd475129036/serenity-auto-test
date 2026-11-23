@@ -107,6 +107,9 @@
 
         .icon-encrypt { background: var(--primary-soft); color: var(--primary); }
         .icon-decrypt { background: var(--success-soft); color: var(--success); }
+        .icon-batch { background: #fef3c7; color: #b45309; }
+
+        .card.full { grid-column: 1 / -1; }
 
         .card-head h2 {
             margin: 0;
@@ -259,6 +262,104 @@
             font-weight: 600;
             color: #374151;
         }
+
+        .result-tools {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .mode-switch {
+            display: inline-flex;
+            align-self: flex-start;
+            gap: 4px;
+            padding: 4px;
+            border-radius: 10px;
+            background: #f3f4f6;
+        }
+
+        .mode-btn {
+            border: 0;
+            background: transparent;
+            color: var(--muted);
+            border-radius: 7px;
+            padding: 7px 16px;
+            font-size: 13px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+        }
+
+        .mode-btn.active {
+            background: #ffffff;
+            color: var(--primary);
+            box-shadow: 0 1px 3px rgba(31, 41, 55, 0.12);
+        }
+
+        .batch-input { min-height: 160px; }
+
+        .batch-table-wrap {
+            max-height: 340px;
+            overflow: auto;
+            border: 1px dashed #c7d2fe;
+            border-radius: 10px;
+            background: #f8faff;
+        }
+
+        .batch-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .batch-table th {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            background: #eef2ff;
+            color: #4338ca;
+            text-align: left;
+            font-weight: 600;
+            padding: 8px 10px;
+            white-space: nowrap;
+        }
+
+        .batch-table td {
+            padding: 8px 10px;
+            border-top: 1px solid var(--border);
+            vertical-align: top;
+        }
+
+        .batch-table td.index {
+            width: 72px;
+            color: var(--muted);
+            white-space: nowrap;
+        }
+
+        .batch-table td.status { width: 68px; }
+
+        .batch-table td.value {
+            font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+            white-space: pre-wrap;
+            word-break: break-all;
+            color: #111827;
+        }
+
+        .batch-table td.value.value-error { color: var(--danger); }
+
+        .batch-table td.action { width: 64px; text-align: right; }
+
+        .badge {
+            display: inline-block;
+            padding: 1px 8px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge-ok { background: var(--success-soft); color: var(--success); }
+        .badge-fail { background: var(--danger-soft); color: var(--danger); }
 
         .copy-btn {
             border: 1px solid var(--border);
@@ -491,8 +592,91 @@
         </section>
     </main>
 
+    <section class="card full" aria-labelledby="batch-title" style="margin-top: 20px;">
+        <div class="card-head">
+            <div class="icon icon-batch" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="4" width="18" height="6" rx="2"></rect>
+                    <rect x="3" y="14" width="18" height="6" rx="2"></rect>
+                </svg>
+            </div>
+            <div>
+                <h2 id="batch-title">批量加解密</h2>
+                <p>一次粘贴多行内容，每行生成一条对应结果；空行会自动忽略</p>
+            </div>
+        </div>
+
+        <div class="mode-switch" role="group" aria-label="批量模式">
+            <button type="button" class="mode-btn active" data-batch-mode="encrypt" aria-pressed="true">批量加密</button>
+            <button type="button" class="mode-btn" data-batch-mode="decrypt" aria-pressed="false">批量解密</button>
+        </div>
+
+        <form id="batch-form" novalidate>
+            <div class="field">
+                <label for="batch-text">输入内容（每行一条）</label>
+                <textarea id="batch-text" name="text" class="batch-input"
+                          placeholder="每行输入一条明文，例如：&#10;hello jasypt&#10;second value"
+                          spellcheck="false"></textarea>
+            </div>
+
+            <div class="field">
+                <label for="batch-password">密钥</label>
+                <div class="password-wrap">
+                    <input id="batch-password" name="password" type="password" placeholder="请输入用于批量加解密的密钥"
+                           autocomplete="off">
+                    <button type="button" class="toggle-key" data-toggle="batch-password"
+                            aria-label="显示或隐藏密钥">显示</button>
+                </div>
+                <div class="key-tools">
+                    <button type="button" class="key-btn" data-generate="batch-password">随机生成 32 位</button>
+                    <button type="button" class="key-btn" data-copy-key="batch-password">复制密钥</button>
+                </div>
+                <p class="key-warning">注意：批量解密时所有密文需使用同一密钥；密钥错误或密文无效的行会单独标记失败。</p>
+            </div>
+
+            <div class="actions">
+                <button type="submit" class="btn btn-primary" id="batch-submit">批量加密</button>
+                <span class="hint">Ctrl / ⌘ + Enter 快速提交</span>
+            </div>
+
+            <div class="alert" id="batch-alert" role="alert" aria-live="assertive">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <span class="alert-text"></span>
+            </div>
+
+            <div class="result-box" id="batch-result-box">
+                <div class="result-label">
+                    <span id="batch-result-title">密文结果</span>
+                    <div class="result-tools">
+                        <span class="hint" id="batch-summary"></span>
+                        <button type="button" class="copy-btn" data-copy-all-batch>复制全部结果</button>
+                    </div>
+                </div>
+                <div class="batch-table-wrap">
+                    <table class="batch-table">
+                        <thead>
+                        <tr>
+                            <th>行号</th>
+                            <th>状态</th>
+                            <th>结果</th>
+                            <th></th>
+                        </tr>
+                        </thead>
+                        <tbody id="batch-results"></tbody>
+                    </table>
+                </div>
+            </div>
+        </form>
+    </section>
+
     <p class="footnote">
-        接口：<code>POST /api/encrypt</code> 与 <code>POST /api/decrypt</code> · 加密算法 PBEWITHHMACSHA512ANDAES_256
+        接口：<code>POST /api/encrypt</code>、<code>POST /api/decrypt</code> 及对应 <code>/batch</code> 批量接口 · 加密算法 PBEWITHHMACSHA512ANDAES_256
     </p>
 </div>
 
@@ -547,9 +731,17 @@
             alert.querySelector('.alert-text').textContent = '';
         }
 
+        let batchMode = 'encrypt';
+        let lastBatchValues = [];
+
         function setLoading(panel, loading) {
             const button = document.getElementById(panel + '-submit');
-            const label = panel === 'encrypt' ? '加密' : '解密';
+            let label;
+            if (panel === 'batch') {
+                label = batchMode === 'encrypt' ? '批量加密' : '批量解密';
+            } else {
+                label = panel === 'encrypt' ? '加密' : '解密';
+            }
             button.disabled = loading;
             button.textContent = loading ? '处理中…' : label;
         }
@@ -604,6 +796,177 @@
                 setLoading(panel, false);
             }
         }
+
+        function setBatchMode(mode) {
+            batchMode = mode;
+            document.querySelectorAll('[data-batch-mode]').forEach(function (button) {
+                const active = button.dataset.batchMode === mode;
+                button.classList.toggle('active', active);
+                button.setAttribute('aria-pressed', active ? 'true' : 'false');
+            });
+
+            const submit = document.getElementById('batch-submit');
+            submit.textContent = mode === 'encrypt' ? '批量加密' : '批量解密';
+            submit.classList.toggle('btn-primary', mode === 'encrypt');
+            submit.classList.toggle('btn-success', mode === 'decrypt');
+
+            document.getElementById('batch-text').placeholder = mode === 'encrypt'
+                ? '每行输入一条明文，例如：\nhello jasypt\nsecond value'
+                : '每行输入一条密文，例如：\n密文1\n密文2';
+            document.getElementById('batch-result-title').textContent =
+                mode === 'encrypt' ? '密文结果' : '明文结果';
+
+            document.getElementById('batch-result-box').classList.remove('visible');
+            document.getElementById('batch-results').textContent = '';
+            document.getElementById('batch-summary').textContent = '';
+            lastBatchValues = [];
+        }
+
+        function renderBatchResults(results, items) {
+            const tbody = document.getElementById('batch-results');
+            tbody.textContent = '';
+            lastBatchValues = [];
+            let successCount = 0;
+
+            results.forEach(function (item) {
+                const source = items[item.index] || { line: item.index + 1 };
+                lastBatchValues.push(item.success ? item.result : '');
+
+                const row = document.createElement('tr');
+
+                const indexCell = document.createElement('td');
+                indexCell.className = 'index';
+                indexCell.textContent = '第 ' + source.line + ' 行';
+                row.appendChild(indexCell);
+
+                const statusCell = document.createElement('td');
+                statusCell.className = 'status';
+                const badge = document.createElement('span');
+                badge.className = 'badge ' + (item.success ? 'badge-ok' : 'badge-fail');
+                badge.textContent = item.success ? '成功' : '失败';
+                statusCell.appendChild(badge);
+                row.appendChild(statusCell);
+
+                const valueCell = document.createElement('td');
+                valueCell.className = 'value' + (item.success ? '' : ' value-error');
+                valueCell.textContent = item.success ? item.result : item.error;
+                row.appendChild(valueCell);
+
+                const actionCell = document.createElement('td');
+                actionCell.className = 'action';
+                if (item.success) {
+                    successCount++;
+                    const copyButton = document.createElement('button');
+                    copyButton.type = 'button';
+                    copyButton.className = 'copy-btn';
+                    copyButton.textContent = '复制';
+                    copyButton.addEventListener('click', function () {
+                        copyText(item.result, '已复制到剪贴板');
+                    });
+                    actionCell.appendChild(copyButton);
+                }
+                row.appendChild(actionCell);
+                tbody.appendChild(row);
+            });
+
+            document.getElementById('batch-summary').textContent =
+                '共 ' + results.length + ' 条，成功 ' + successCount + ' 条';
+            document.getElementById('batch-result-box').classList.add('visible');
+        }
+
+        async function callBatch() {
+            clearAlert('batch');
+
+            const lines = document.getElementById('batch-text').value.split(/\r?\n/);
+            const items = [];
+            lines.forEach(function (line, index) {
+                const value = line.trim();
+                if (value) {
+                    items.push({ line: index + 1, text: value });
+                }
+            });
+            const password = document.getElementById('batch-password').value;
+
+            if (items.length === 0) {
+                showAlert('batch', '请每行输入一条内容，至少输入一行。');
+                return;
+            }
+            if (!password.trim()) {
+                showAlert('batch', '请输入密钥。');
+                return;
+            }
+
+            setLoading('batch', true);
+            try {
+                const response = await fetch('/api/' + batchMode + '/batch', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        texts: items.map(function (item) {
+                            return item.text;
+                        }),
+                        password: password
+                    })
+                });
+
+                let data = null;
+                try {
+                    data = await response.json();
+                } catch (e) {
+                    data = null;
+                }
+
+                if (!response.ok) {
+                    const message = data && data.error
+                        ? data.error
+                        : '请求失败（HTTP ' + response.status + '），请稍后重试。';
+                    showAlert('batch', message);
+                    return;
+                }
+
+                if (!data || !Array.isArray(data.results) || data.results.length !== items.length) {
+                    showAlert('batch', '服务返回了无法识别的结果，请稍后重试。');
+                    return;
+                }
+
+                renderBatchResults(data.results, items);
+            } catch (e) {
+                showAlert('batch', '无法连接服务，请确认服务已启动后重试。');
+            } finally {
+                setLoading('batch', false);
+            }
+        }
+
+        document.querySelectorAll('[data-batch-mode]').forEach(function (button) {
+            button.addEventListener('click', function () {
+                setBatchMode(button.dataset.batchMode);
+            });
+        });
+
+        document.getElementById('batch-form').addEventListener('submit', function (event) {
+            event.preventDefault();
+            callBatch();
+        });
+
+        document.getElementById('batch-form').addEventListener('keydown', function (event) {
+            if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+                event.preventDefault();
+                callBatch();
+            }
+        });
+
+        document.querySelector('[data-copy-all-batch]').addEventListener('click', function () {
+            const hasValue = lastBatchValues.some(function (value) {
+                return value;
+            });
+            if (!hasValue) {
+                showToast('暂无可复制的结果');
+                return;
+            }
+            copyText(lastBatchValues.join('\n'), '已复制全部结果');
+        });
+
+        setBatchMode('encrypt');
 
         ['encrypt', 'decrypt'].forEach(function (panel) {
             const form = document.getElementById(panel + '-form');

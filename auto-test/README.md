@@ -11,7 +11,7 @@
 - Serenity BDD 5.3.3
 - Spring JdbcTemplate + H2 / Oracle JDBC
 - Apache Commons Exec
-- Serenity REST Assured + Screenplay REST
+- Serenity REST Assured
 
 ## 目录结构
 
@@ -21,10 +21,8 @@ src/test/java/com/example/autotest/
 ├── support/LocalOrderApi.java
 ├── order/
 │   ├── OrderLookupStoryTest.java
-│   ├── OrderScreenplayStoryTest.java
 │   ├── OrderParallelStoryTest.java
-│   ├── OrderQuerySupport.java
-│   └── OrderScreenplay.java
+│   └── OrderQuerySupport.java
 ├── reconciliation/
 │   ├── ReconciliationStoryTest.java
 │   └── ReconciliationSupport.java
@@ -33,9 +31,9 @@ src/test/java/com/example/autotest/
     └── ReportEvidence.java
 ```
 
-目前有 5 个 Story 测试类，每个测试类通过 class-level `@Story` 描述具体业务价值：
+目前有 4 个 Story 测试类，每个测试类通过 class-level `@Story` 描述具体业务价值：
 
-- 订单：同一 Feature 下包含普通查询、Screenplay 和并行查询 3 个 Story。
+- 订单：同一 Feature 下包含普通查询和并行查询 2 个 Story。
 - 对账：对账成功，以及批处理失败时保持原数据。
 - 活文档：嵌套步骤、Session Variable、动态场景和 Pending。
 
@@ -43,7 +41,7 @@ Serenity 报告层级为 `@Epic > @Feature > @Story > Test`。
 
 ## 需求层级演示
 
-`订单查询` 是一个完整的演示 Feature。3 个测试类共享相同的
+`订单查询` 是一个完整的演示 Feature。2 个测试类共享相同的
 `@Epic("订单服务")` 和 `@Feature("订单查询")`，再分别用不同的 `@Story`
 拆出业务行为：
 
@@ -55,9 +53,6 @@ Serenity 报告层级为 `@Epic > @Feature > @Story > Test`。
     │   ├── 查询订单 2
     │   ├── 查询不存在的订单返回 404
     │   └── 查询配置的外部订单
-    ├── 使用 Screenplay 查询订单 (@Story)
-    │   ├── Actor 执行 REST Task 并回答 Question
-    │   └── Screenplay Ensure 交互断言
     └── 并行查询订单 (@Story)
         ├── 并行查询订单 1
         ├── 并行查询订单 2
@@ -65,7 +60,7 @@ Serenity 报告层级为 `@Epic > @Feature > @Story > Test`。
         └── 并行查询订单 4
 ```
 
-因此该 Feature 在报告中显示为 `1 个 Feature -> 3 个 Story -> 10 个 Scenario`。
+因此该 Feature 在报告中显示为 `1 个 Feature -> 2 个 Story -> 8 个 Scenario`。
 其中外部订单 Scenario 默认因 `api.enabled=false` 被跳过，不影响本地构建。
 
 约定如下：
@@ -90,7 +85,6 @@ Serenity 报告层级为 `@Epic > @Feature > @Story > Test`。
 ./mvnw clean verify -Dtags=smoke
 ./mvnw clean verify -Dtags=negative
 ./mvnw clean verify -Dtags=demo
-./mvnw clean verify -Dtags=screenplay
 ./mvnw clean verify -Dtags=parallel
 ```
 

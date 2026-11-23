@@ -60,14 +60,23 @@ java -jar jasypt-web/target/jasypt-web-0.0.1-SNAPSHOT.jar
 http://localhost:8080/
 ```
 
-页面包含加密区和解密区：输入文本与密钥即可调用对应接口，支持一键复制结果；空参数、密钥错误、密文无效、服务未启动等情况会在页面上给出明确提示。
+页面包含单个加密/解密区和批量加解密区：单个模式输入文本与密钥即可调用对应接口；批量模式可一次粘贴多行内容，每行生成一条对应结果，逐条显示成功/失败并支持单独或整体复制。密钥框支持由后端生成 32 位安全随机密钥并一键复制；空参数、密钥错误、密文无效、服务未启动等情况会在页面上给出明确提示。
 
 ## 接口说明
 
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
+| GET | `/api/key` | 由后端使用 `SecureRandom` 生成 32 位安全随机密钥 |
 | POST | `/api/encrypt` | 输入明文和密钥，返回密文 |
 | POST | `/api/decrypt` | 输入密文和密钥，返回明文 |
+| POST | `/api/encrypt/batch` | 批量加密，返回与输入顺序、数量一一对应的结果 |
+| POST | `/api/decrypt/batch` | 批量解密，返回与输入顺序、数量一一对应的结果 |
+
+生成密钥响应示例：
+
+```json
+{"key":"0hDNxA4dN7RV7dXupuSjTSsUpAbb5FbS"}
+```
 
 请求体：
 
@@ -93,6 +102,29 @@ http://localhost:8080/
   "error": "错误原因"
 }
 ```
+
+批量接口请求体：
+
+```json
+{
+  "texts": ["第一条", "第二条", "第三条"],
+  "password": "你的密钥"
+}
+```
+
+批量接口响应体（成功）：
+
+```json
+{
+  "results": [
+    { "index": 0, "success": true, "result": "第一条结果", "error": null },
+    { "index": 1, "success": true, "result": "第二条结果", "error": null },
+    { "index": 2, "success": false, "result": null, "error": "解密失败：密钥错误或密文无效" }
+  ]
+}
+```
+
+`results` 与请求 `texts` 的顺序、数量完全一致；单条失败只标记该条，不影响其他条目。
 
 ## curl 示例
 
@@ -128,6 +160,22 @@ curl -s -X POST http://localhost:8080/api/decrypt \
 
 ```json
 {"error":"解密失败：密钥错误或密文无效"}
+```
+
+批量加密：
+
+```bash
+curl -s -X POST http://localhost:8080/api/encrypt/batch \
+  -H "Content-Type: application/json" \
+  -d '{"texts":["hello jasypt","second value"],"password":"my-secret-key"}'
+```
+
+批量解密（把上一步每条 `result` 按顺序放入 `texts`）：
+
+```bash
+curl -s -X POST http://localhost:8080/api/decrypt/batch \
+  -H "Content-Type: application/json" \
+  -d '{"texts":["第一条密文","第二条密文"],"password":"my-secret-key"}'
 ```
 
 ## 用法二：作为 jar 引用（不启动 Web）
@@ -179,6 +227,27 @@ try {
     String plainText = JasyptCrypto.decrypt(cipherText, password);
 } catch (EncryptionOperationNotPossibleException e) {
     // 密钥错误或密文无效
+}
+```
+
+批量加解密返回 `List<BatchResult>`，数量与顺序和输入一致，单条失败不会中断整批：
+
+```java
+import com.example.jasypt.core.BatchResult;
+import java.util.Arrays;
+import java.util.List;
+
+List<BatchResult> encrypted = JasyptCrypto.encryptAll(
+        Arrays.asList("hello", "jasypt"), password);
+List<BatchResult> decrypted = JasyptCrypto.decryptAll(
+        Arrays.asList(encrypted.get(0).getValue(), encrypted.get(1).getValue()), password);
+
+for (BatchResult result : decrypted) {
+    if (result.isSuccess()) {
+        System.out.println(result.getIndex() + " -> " + result.getValue());
+    } else {
+        System.out.println(result.getIndex() + " 失败：" + result.getError());
+    }
 }
 ```
 

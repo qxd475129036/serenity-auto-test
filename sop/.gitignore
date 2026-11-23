@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.pyc
+*.egg-info/
+.DS_Store
+
+# 运行产物与登录态
+runs/*
+!runs/.gitkeep
+.auth/

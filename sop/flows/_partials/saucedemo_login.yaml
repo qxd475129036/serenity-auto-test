@@ -1,0 +1,36 @@
+# 可复用的登录步骤片段：被 01_login / 02_add_to_cart 通过 include_steps 引用。
+# locators 里的 pages.* 引用会在加载时从 pages/saucedemo.py 读取定位字典。
+locators:
+  login.username: pages.saucedemo.LOGIN_USERNAME
+  login.password: pages.saucedemo.LOGIN_PASSWORD
+  login.submit: pages.saucedemo.LOGIN_BUTTON
+  login.inventory: pages.saucedemo.INVENTORY_CONTAINER
+
+steps:
+  - action: goto
+    name: 打开登录页
+    url: "{{env.base_url}}"
+
+  - action: assert
+    name: 登录表单已渲染
+    target: login.submit
+    state: visible
+
+  - action: fill
+    name: 输入用户名
+    target: login.username
+    value: "{{env.username}}"
+
+  - action: fill
+    name: 输入密码
+    target: login.password
+    value: "{{env.password}}"
+
+  - action: click
+    name: 点击登录
+    target: login.submit
+
+  - action: wait_for
+    name: 进入商品列表
+    target: login.inventory
+    key: true

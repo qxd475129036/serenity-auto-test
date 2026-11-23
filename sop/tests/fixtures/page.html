@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Sop Test Fixture</title>
+</head>
+<body>
+  <h1>Test Page</h1>
+
+  <button data-test="save" id="save-btn" aria-label="Save">Save</button>
+  <button data-test="delete">Delete A</button>
+  <button data-test="delete">Delete B</button>
+  <button data-test="delete">Delete C</button>
+  <button id="login-btn" aria-label="Login">Login</button>
+  <p id="hello">Hello World</p>
+  <input data-test="username" id="username" value="">
+  <button id="async-save" data-test="async-save"
+          onclick="this.disabled=true;setTimeout(() => { this.disabled=false; }, 300)">Async Save</button>
+  <div id="hidden" style="display:none">Hidden Text</div>
+
+  <ul id="list">
+    <li>One</li>
+    <li>Two</li>
+  </ul>
+
+  <div class="rows">
+    <div class="row" data-test="row">
+      <span class="name">Row A</span>
+      <button data-test="row-delete">Delete Row A</button>
+    </div>
+    <div class="row" data-test="row">
+      <span class="name">Row B</span>
+      <button data-test="row-delete">Delete Row B</button>
+    </div>
+  </div>
+
+  <iframe id="editor-frame" name="editor" src="frame.html" title="Editor"></iframe>
+</body>
+</html>

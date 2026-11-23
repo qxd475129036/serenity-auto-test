@@ -1,8 +1,12 @@
 package com.example.jasypt.core;
 
 import org.jasypt.encryption.pbe.StandardPBEStringEncryptor;
+import org.jasypt.exceptions.EncryptionOperationNotPossibleException;
 import org.jasypt.iv.RandomIvGenerator;
 import org.jasypt.salt.RandomSaltGenerator;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * jasypt 加解密共通方法。
@@ -46,6 +50,70 @@ public final class JasyptCrypto {
             throw new IllegalArgumentException("cipherText 不能为 null");
         }
         return newEncryptor(password).decrypt(cipherText);
+    }
+
+    /**
+     * 批量加密。
+     *
+     * <p>返回结果的数量与顺序和输入完全一致。单条明文为 {@code null} 时仅该条标记失败，
+     * 不影响其他条目；{@code password} 为空或 {@code plainTexts} 为 {@code null} 时整批抛出
+     * {@link IllegalArgumentException}。</p>
+     *
+     * @param plainTexts 明文列表
+     * @param password   密钥
+     * @return 与输入一一对应的批量结果
+     */
+    public static List<BatchResult> encryptAll(List<String> plainTexts, String password) {
+        if (plainTexts == null) {
+            throw new IllegalArgumentException("plainTexts 不能为 null");
+        }
+        StandardPBEStringEncryptor encryptor = newEncryptor(password);
+        List<BatchResult> results = new ArrayList<BatchResult>(plainTexts.size());
+        for (int i = 0; i < plainTexts.size(); i++) {
+            String plainText = plainTexts.get(i);
+            if (plainText == null) {
+                results.add(BatchResult.failure(i, "明文不能为 null"));
+                continue;
+            }
+            try {
+                results.add(BatchResult.success(i, encryptor.encrypt(plainText)));
+            } catch (EncryptionOperationNotPossibleException e) {
+                results.add(BatchResult.failure(i, "加密失败：" + e.getMessage()));
+            }
+        }
+        return results;
+    }
+
+    /**
+     * 批量解密。
+     *
+     * <p>返回结果的数量与顺序和输入完全一致。单条密文无效或为 {@code null} 时仅该条标记失败，
+     * 不影响其他条目；{@code password} 为空或 {@code cipherTexts} 为 {@code null} 时整批抛出
+     * {@link IllegalArgumentException}。</p>
+     *
+     * @param cipherTexts 密文列表
+     * @param password    加密时使用的密钥
+     * @return 与输入一一对应的批量结果
+     */
+    public static List<BatchResult> decryptAll(List<String> cipherTexts, String password) {
+        if (cipherTexts == null) {
+            throw new IllegalArgumentException("cipherTexts 不能为 null");
+        }
+        StandardPBEStringEncryptor encryptor = newEncryptor(password);
+        List<BatchResult> results = new ArrayList<BatchResult>(cipherTexts.size());
+        for (int i = 0; i < cipherTexts.size(); i++) {
+            String cipherText = cipherTexts.get(i);
+            if (cipherText == null) {
+                results.add(BatchResult.failure(i, "密文不能为 null"));
+                continue;
+            }
+            try {
+                results.add(BatchResult.success(i, encryptor.decrypt(cipherText)));
+            } catch (EncryptionOperationNotPossibleException e) {
+                results.add(BatchResult.failure(i, "解密失败：密钥错误或密文无效"));
+            }
+        }
+        return results;
     }
 
     private static StandardPBEStringEncryptor newEncryptor(String password) {

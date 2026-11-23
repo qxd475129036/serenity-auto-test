@@ -33,6 +33,11 @@
     <dependencies>
         <dependency>
             <groupId>org.springframework</groupId>
+            <artifactId>spring-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
             <artifactId>spring-jdbc</artifactId>
             <scope>test</scope>
         </dependency>
@@ -55,9 +60,8 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>net.serenity-bdd</groupId>
-            <artifactId>serenity-screenplay-rest</artifactId>
-            <version>${serenity.version}</version>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -99,21 +103,11 @@
                 <configuration>
                     <forkCount>1</forkCount>
                     <reuseForks>true</reuseForks>
-                    <testFailureIgnore>false</testFailureIgnore>
+                    <!-- 让生命周期继续到 post-integration-test 生成报告；测试失败由 serenity:aggregate 在生成报告后如实抛出 -->
+                    <testFailureIgnore>true</testFailureIgnore>
                     <groups>${tags}</groups>
                     <systemPropertyVariables>
-                        <db.kind>${db.kind}</db.kind>
-                        <db.url>${db.url}</db.url>
-                        <db.user>${db.user}</db.user>
-                        <db.password>${db.password}</db.password>
-                        <db.init>${db.init}</db.init>
-                        <batch.shell.path>${batch.shell.path}</batch.shell.path>
-                        <batch.log.dir>${batch.log.dir}</batch.log.dir>
-                        <batch.date>${batch.date}</batch.date>
-                        <batch.timeout.seconds>${batch.timeout.seconds}</batch.timeout.seconds>
-                        <api.enabled>${api.enabled}</api.enabled>
-                        <api.base.url>${api.base.url}</api.base.url>
-                        <api.order.id>${api.order.id}</api.order.id>
+                        <test.env>${test.env}</test.env>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
@@ -129,6 +123,10 @@
                     <execution>
                         <id>serenity-reports</id>
                         <phase>post-integration-test</phase>
+                        <configuration>
+                            <!-- 报告生成后，若存在失败/错误场景则让构建失败 -->
+                            <ignoreFailedTests>false</ignoreFailedTests>
+                        </configuration>
                         <goals>
                             <goal>aggregate</goal>
                         </goals>
@@ -144,34 +142,12 @@
             <activation>
                 <activeByDefault>true</activeByDefault>
             </activation>
-            <properties>
-                <db.kind>h2</db.kind>
-                <db.url>jdbc:h2:file:${project.build.directory}/test-db/reconciliation;MODE=Oracle;DATABASE_TO_UPPER=TRUE</db.url>
-                <db.user>sa</db.user>
-                <db.password/>
-                <db.init>true</db.init>
-                <batch.shell.path>${project.basedir}/scripts/run_local_reconciliation.sh</batch.shell.path>
-                <batch.log.dir>${project.build.directory}/batch-logs</batch.log.dir>
-                <batch.date>2026-10-31</batch.date>
-                <batch.timeout.seconds>30</batch.timeout.seconds>
-                <api.enabled>false</api.enabled>
-                <api.base.url>http://localhost:8080</api.base.url>
-                <api.order.id>1</api.order.id>
-            </properties>
         </profile>
 
         <profile>
             <id>staging</id>
             <properties>
-                <db.kind>oracle</db.kind>
-                <db.init>false</db.init>
-                <batch.shell.path>${env.BATCH_SHELL_PATH}</batch.shell.path>
-                <batch.log.dir>${env.BATCH_LOG_DIR}</batch.log.dir>
-                <batch.date>${env.BATCH_DATE}</batch.date>
-                <batch.timeout.seconds>600</batch.timeout.seconds>
-                <api.enabled>true</api.enabled>
-                <api.base.url>${env.API_BASE_URL}</api.base.url>
-                <api.order.id>${env.API_ORDER_ID}</api.order.id>
+                <test.env>staging</test.env>
             </properties>
         </profile>
     </profiles>

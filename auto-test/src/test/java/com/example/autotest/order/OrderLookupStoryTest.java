@@ -10,10 +10,10 @@ import net.serenitybdd.junit5.SerenityJUnit5Extension;
 import net.serenitybdd.rest.SerenityRest;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @ExtendWith(SerenityJUnit5Extension.class)
 @Epic("订单服务")
@@ -51,8 +51,9 @@ class OrderLookupStoryTest {
     @Test
     @Title("查询配置的外部订单")
     @Tag("api")
-    @EnabledIfSystemProperty(named = "api.enabled", matches = "true")
     void shouldQueryConfiguredExternalOrder() {
+        assumeTrue(settings.apiEnabled(), "api.enabled=false，跳过外部订单场景");
+
         Response response = SerenityRest.given()
                 .baseUri(settings.apiBaseUrl())
                 .accept("application/json")
@@ -60,7 +61,7 @@ class OrderLookupStoryTest {
                 .get("/api/orders/{orderId}", settings.apiOrderId());
 
         assertThat(response.statusCode())
-                .as("订单 API 响应状态码异常: %s", response.asPrettyString())
+                .as("订单 API 响应状态码异常: %s", response.getBody().asString())
                 .isEqualTo(200);
         assertThat(response.jsonPath().getLong("id"))
                 .as("订单 API 返回了错误的订单")

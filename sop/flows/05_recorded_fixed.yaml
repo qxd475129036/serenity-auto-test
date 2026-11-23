@@ -1,0 +1,83 @@
+version: 1
+name: 05_recorded_fixed
+description: 由 sop record 录制
+env: local
+locators:
+  encrypt-form-button-随机生成-32-位:
+    role: button
+    name: 随机生成 32 位
+    exact: true
+    within:
+      css: '#encrypt-form'
+  textbox-明文:
+    role: textbox
+    name: 明文
+    exact: true
+  button-加密:
+    role: button
+    name: 加密
+    exact: true
+  encrypt-output:
+    css: '#encrypt-output'
+  textbox-密文:
+    role: textbox
+    name: 密文
+    exact: true
+  encrypt-form-textbox-密钥:
+    role: textbox
+    name: 密钥
+    exact: true
+    within:
+      css: '#encrypt-form'
+  decrypt-form-textbox-密钥:
+    role: textbox
+    name: 密钥
+    exact: true
+    within:
+      css: '#decrypt-form'
+  button-解密:
+    role: button
+    name: 解密
+    exact: true
+  decrypt-output:
+    css: '#decrypt-output'
+steps:
+- action: goto
+  name: 打开页面
+  url: '{{env.base_url}}'
+- action: click
+  name: 点击 随机生成 32 位
+  target: encrypt-form-button-随机生成-32-位
+- action: fill
+  name: 输入 明文
+  target: textbox-明文
+  value: '123456'
+- action: click
+  name: 点击 加密
+  target: button-加密
+- action: screenshot
+  name: 截图 1
+- action: extract
+  name: 提取 encrypt-output
+  target: encrypt-output
+  as: encrypt_output
+- action: fill
+  name: 输入 密文
+  target: textbox-密文
+  value: '{{encrypt_output}}'
+- action: extract
+  name: 提取 密钥
+  target: encrypt-form-textbox-密钥
+  as: encrypt_password
+  attr: value
+- action: fill
+  name: 输入 密钥
+  target: decrypt-form-textbox-密钥
+  value: '{{encrypt_password}}'
+- action: click
+  name: 点击 解密
+  target: button-解密
+- action: assert
+  name: 断言文本 123456
+  target: decrypt-output
+  text: '123456'

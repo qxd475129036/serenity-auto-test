@@ -1,0 +1,32 @@
+version: 1
+name: 02_add_to_cart
+description: 登录后把背包加入购物车，断言角标并截图
+timeout: 90
+default_step_timeout: 12
+retries: 1
+include_steps:
+  - _partials/saucedemo_login.yaml
+
+steps:
+  - action: click
+    name: 背包加入购物车
+    target:
+      testid: add-to-cart-sauce-labs-backpack
+      role: button
+      name: Add to cart
+    key: true
+
+  - action: assert
+    name: 购物车角标为 1
+    target:
+      testid: shopping-cart-badge
+      css: ".shopping_cart_badge"
+    state: visible
+    text: "1"
+
+  - action: screenshot
+    name: 购物车角标
+
+  - action: assert
+    name: 仍停留在商品页
+    url_contains: /inventory.html

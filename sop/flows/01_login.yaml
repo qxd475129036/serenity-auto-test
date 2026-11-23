@@ -1,0 +1,41 @@
+version: 1
+name: 01_login
+description: SauceDemo 登录 → 商品列表 → 断言、排序、提取与截图
+timeout: 90
+default_step_timeout: 12
+retries: 1
+save_storage_state: .auth/saucedemo.json
+include_steps:
+  - _partials/saucedemo_login.yaml
+
+steps:
+  - action: assert
+    name: URL 已跳转商品页
+    url_contains: /inventory.html
+
+  - action: assert
+    name: 品牌标题正确
+    text: Swag Labs
+
+  - action: select
+    name: 按价格从低到高排序
+    target:
+      testid: product-sort-container
+    label: Price (low to high)
+
+  - action: screenshot
+    name: 商品列表
+
+  - action: extract
+    name: 提取商品名称
+    target:
+      testid: inventory-item
+    all: true
+    attr: inner_text
+    as: products
+
+  - action: run
+    name: 校验商品数量与内容
+    file: scripts/check_products.py
+    args:
+      expected: 6

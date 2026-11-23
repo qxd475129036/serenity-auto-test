@@ -1,5 +1,7 @@
 package com.example.jasypt.controller;
 
+import com.example.jasypt.dto.BatchCryptoRequest;
+import com.example.jasypt.dto.BatchCryptoResponse;
 import com.example.jasypt.dto.CryptoRequest;
 import com.example.jasypt.dto.CryptoResponse;
 import com.example.jasypt.dto.KeyResponse;
@@ -49,6 +51,39 @@ public class CryptoController {
         } catch (EncryptionOperationNotPossibleException e) {
             return ResponseEntity.badRequest().body(Map.of("error", "解密失败：密钥错误或密文无效"));
         }
+    }
+
+    @PostMapping("/encrypt/batch")
+    public ResponseEntity<?> encryptBatch(@RequestBody BatchCryptoRequest request) {
+        ResponseEntity<?> invalid = validateBatch(request);
+        if (invalid != null) {
+            return invalid;
+        }
+        return ResponseEntity.ok(
+                new BatchCryptoResponse(cryptoService.encryptBatch(request.texts(), request.password())));
+    }
+
+    @PostMapping("/decrypt/batch")
+    public ResponseEntity<?> decryptBatch(@RequestBody BatchCryptoRequest request) {
+        ResponseEntity<?> invalid = validateBatch(request);
+        if (invalid != null) {
+            return invalid;
+        }
+        return ResponseEntity.ok(
+                new BatchCryptoResponse(cryptoService.decryptBatch(request.texts(), request.password())));
+    }
+
+    /**
+     * 批量接口的公共参数校验：单条内容的失败原因由结果列表逐条返回，这里只校验整批参数。
+     */
+    private ResponseEntity<?> validateBatch(BatchCryptoRequest request) {
+        if (request == null || request.texts() == null || request.texts().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "texts 不能为空"));
+        }
+        if (isBlank(request.password())) {
+            return ResponseEntity.badRequest().body(Map.of("error", "password 不能为空"));
+        }
+        return null;
     }
 
     private boolean isBlank(String value) {

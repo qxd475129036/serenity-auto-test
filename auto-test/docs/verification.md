@@ -16,7 +16,6 @@
 ./mvnw clean verify -Dtags=smoke       # 核心成功路径
 ./mvnw clean verify -Dtags=negative    # 异常路径
 ./mvnw clean verify -Dtags=demo        # 全部演示 Story
-./mvnw clean verify -Dtags=screenplay  # Screenplay 场景
 ./mvnw clean verify -Dtags=parallel    # 并行场景
 ```
 

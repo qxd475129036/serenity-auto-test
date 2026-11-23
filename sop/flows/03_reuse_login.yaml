@@ -1,0 +1,33 @@
+version: 1
+name: 03_reuse_login
+description: 复用 01_login 保存的登录态直接进入商品页（批量执行时先跑 01 即可满足）
+timeout: 45
+default_step_timeout: 12
+retries: 1
+requires:
+  - 01_login
+storage_state: .auth/saucedemo.json
+locators:
+  inventory.container: pages.saucedemo.INVENTORY_CONTAINER
+
+steps:
+  - action: goto
+    name: 直接打开商品页
+    url: "{{env.base_url}}/inventory.html"
+    key: true
+
+  - action: assert
+    name: 登录态有效
+    target: inventory.container
+    state: visible
+
+  - action: assert
+    name: URL 正确
+    url_contains: /inventory.html
+
+  - action: assert
+    name: 页面标题正确
+    text: Products
+
+  - action: screenshot
+    name: 复用登录态进入商品页

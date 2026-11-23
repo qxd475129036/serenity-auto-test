@@ -7,7 +7,7 @@
 ## 技术栈（摘要）
 
 JDK 25 · Spring Boot 4.0.9（parent）· JUnit Jupiter（org.junit.jupiter，版本由 Spring Boot parent 管理）
-· Serenity BDD 5.3.3（serenity-junit5 / rest-assured / screenplay-rest）· Spring JdbcTemplate
+· Serenity BDD 5.3.3（serenity-junit5 / rest-assured）· Spring JdbcTemplate
 · H2（Oracle 模式）/ Oracle ojdbc17 · Apache Commons Exec
 
 构建入口统一用 `./mvnw`（Maven wrapper，无需全局 Maven）。详见 [docs/tech-stack.md](docs/tech-stack.md)。
@@ -18,7 +18,7 @@ JDK 25 · Spring Boot 4.0.9（parent）· JUnit Jupiter（org.junit.jupiter，�
 src/test/java/com/example/autotest/
 ├── config/         TestSettings 统一配置（系统属性 → 环境变量 → 默认值）
 ├── support/        跨域共享设施（LocalOrderApi 本地 HTTP stub）
-├── order/          订单服务 域：3 个 Story（查询 / Screenplay / 并行）+ 步骤设施
+├── order/          订单服务 域：2 个 Story（查询 / 并行）+ 步骤设施
 ├── reconciliation/ 交易对账 域：1 个 Story（日终对账）+ 步骤设施
 └── documentation/  测试工程能力 域：1 个 Story（活文档）+ 证据步骤
 src/test/resources/db/    H2 schema SQL
@@ -39,7 +39,7 @@ docs/                    AI 规则文档（本目录）
 
 ## 硬性禁令
 
-- 报告文案（`@Epic` / `@Feature` / `@Story` / `@Title` / `@Step` 字符串与 Screenplay 中文文案）必须使用中文业务语言；Java 方法名保持英文 camelCase（`should...`）
+- 报告文案（`@Epic` / `@Feature` / `@Story` / `@Title` / `@Step` 字符串）必须使用中文业务语言；Java 方法名保持英文 camelCase（`should...`）
 - 一个 Story 对应且仅对应一个测试类（class-level `@Story`）；两个测试类不得共用同一个 `@Story` 字符串
 - 测试类只表达业务场景；SQL、HTTP 调用、shell 执行细节一律收敛进同包的 `*Support` 步骤类，通过 `@Steps` 注入
 - `@Epic` / `@Feature` 是报告聚合键：先用 `rg -n '@Epic\("' src` / `rg -n '@Feature\("' src` 匹配仓库已有值，再决定是否新建；同一含义写成不同文案会在报告中劈裂出两个 Feature
@@ -52,7 +52,7 @@ docs/                    AI 规则文档（本目录）
 接到新需求（新增需求 / 场景 / 业务域）时：
 
 1. 定层级：按 [docs/requirements-hierarchy.md](docs/requirements-hierarchy.md) 的决策树确定 `@Epic` / `@Feature` / `@Story` 与场景拆分
-2. 选模板：按测试模式（REST 直调 / Screenplay / 批处理+DB / 活文档）从 [docs/code-templates.md](docs/code-templates.md) 选模板
+2. 选模板：按测试模式（REST 直调 / 批处理+DB / 活文档）从 [docs/code-templates.md](docs/code-templates.md) 选模板
 3. 写代码：遵循 [docs/step-conventions.md](docs/step-conventions.md)；新业务域走其中“新业务域检查清单”
 4. 验证：`./mvnw clean verify` 并按 [docs/verification.md](docs/verification.md) 核对报告
 5. 按以下格式汇报：
