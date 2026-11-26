@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
+import { CSRF_HEADER_NAME, fetchCsrfToken } from "@/lib/spring-auth"
+
 import { hasPermission, type Permission } from "./permissions"
 import { SESSION_COOKIE_NAME, getApiSession, type ApiSession } from "./session"
 
@@ -131,19 +133,36 @@ export async function handleRelay({
     headers["Content-Type"] = contentType
   }
 
+  const buildHeaders = (csrfToken: string | undefined): Record<string, string> =>
+    csrfToken ? { ...headers, [CSRF_HEADER_NAME]: csrfToken } : headers
+
   const method = request.method
   const hasBody = method !== "GET" && method !== "HEAD"
   const upstreamUrl = `${BACKEND_BASE_URL}${upstreamPath}${request.nextUrl.search}`
 
-  let upstream: Response
-  try {
-    upstream = await fetch(upstreamUrl, {
+  const send = (csrfToken: string | undefined) =>
+    fetch(upstreamUrl, {
       method,
-      headers,
+      headers: buildHeaders(csrfToken),
       body: hasBody ? (bodyText ?? "") : undefined,
       redirect: "manual",
       cache: "no-store",
     })
+
+  let upstream: Response
+  try {
+    upstream = await send(session.csrfToken)
+    // Spring 认证后会轮换 CSRF token；写操作被 403 拒绝时重取一次并重试，
+    // 避免把「token 过期」误报成权限不足（权限码不足的 403 重试后仍为 403）。
+    if (upstream.status === 403 && hasBody) {
+      const refreshed = await fetchCsrfToken(
+        BACKEND_BASE_URL,
+        session.springSessionId,
+      )
+      if (refreshed && refreshed !== session.csrfToken) {
+        upstream = await send(refreshed)
+      }
+    }
   } catch {
     return fail("E_INTERNAL", "データ取得サーバーに接続できませんでした。", 502)
   }

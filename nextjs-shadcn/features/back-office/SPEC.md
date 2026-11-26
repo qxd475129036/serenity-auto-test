@@ -91,7 +91,7 @@
 
 ## 数据与接口
 
-- 除认证接口外，所有 API 统一经 `lib/api/` 的共通中转层转发到后端：先做双会话校验（Better Auth 会话 + Spring session cookie），再按接口声明的权限码校验，最后携带 Spring cookie 请求后端并统一包成 `{data}` / `{error:{code,message}}`。
+- 除认证接口外，所有 API 统一经 `lib/api/` 的共通中转层转发到后端：先做双会话校验（Better Auth 会话 + Spring session cookie），再按接口声明的权限码校验，最后携带 Spring cookie 与 `X-CSRF-TOKEN` 头请求后端并统一包成 `{data}` / `{error:{code,message}}`。
 - 权限码在登录时从后端用户信息接口（`PERMISSIONS_API_PATH`，默认 `/api/me`）拉取并写入会话（`user.permissions`）；接口与权限码的映射维护在 `lib/api/permissions.ts`。
 - 前端页面暂不按权限过滤菜单；权限不足时由 API 返回 `403 E_FORBIDDEN`。
 

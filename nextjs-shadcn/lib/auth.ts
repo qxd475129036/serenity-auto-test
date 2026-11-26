@@ -4,35 +4,17 @@ import { createAuthMiddleware } from "better-auth/api"
 import { credentials } from "better-auth-credentials-plugin"
 
 import { credentialsSchema } from "./auth-schema"
+import {
+  SPRING_SESSION_COOKIE_NAME,
+  fetchCsrfToken,
+  readCsrfToken,
+  readSessionId,
+} from "./spring-auth"
 
 const thirdPartyApiUrl = process.env.THIRD_PARTY_API_URL?.replace(/\/+$/, "")
-const springSessionCookieName =
-  process.env.SPRING_SESSION_COOKIE_NAME?.trim() || "SESSION"
 /** 登录后拉取当前用户权限码的后端接口（默认 /api/me） */
 const permissionsApiPath =
   process.env.PERMISSIONS_API_PATH?.trim() || "/api/me"
-
-/**
- * 从响应头中读取 Spring Session 的 cookie 值（默认 cookie 名 SESSION / JSESSIONID）。
- *
- * 该 cookie 为 HttpOnly 且跨域，浏览器 JS 无法读取，只能由服务端在此解析。
- */
-function readSessionId(headers: Headers): string | undefined {
-  const cookie = headers
-    .getSetCookie()
-    .map((value) => value.split(";")[0]?.trim())
-    .find((value) => value?.startsWith(`${springSessionCookieName}=`))
-
-  return cookie?.slice(springSessionCookieName.length + 1) || undefined
-}
-
-/** 从登录页 HTML 中解析 Spring Security 的 CSRF hidden input 值（兼容两种属性顺序）。 */
-function readCsrfToken(html: string): string | undefined {
-  return (
-    /name="_csrf"[^>]*value="([^"]+)"/.exec(html)?.[1] ??
-    /value="([^"]+)"[^>]*name="_csrf"/.exec(html)?.[1]
-  )
-}
 
 /** 把字符串数组或 Spring `[{ authority }]` 形式统一成权限码数组。 */
 function toStringArray(value: unknown): string[] | undefined {
@@ -108,7 +90,7 @@ async function fetchPermissions(
     const res = await fetch(`${baseUrl}${path}`, {
       headers: {
         Accept: "application/json",
-        Cookie: `${springSessionCookieName}=${sessionId}`,
+        Cookie: `${SPRING_SESSION_COOKIE_NAME}=${sessionId}`,
       },
       cache: "no-store",
       signal: AbortSignal.timeout(3000),
@@ -159,6 +141,11 @@ export const auth = betterAuth({
         required: false,
         returned: true,
       },
+      csrfToken: {
+        type: "string",
+        required: false,
+        returned: true,
+      },
     },
   },
   hooks: {
@@ -167,7 +154,7 @@ export const auth = betterAuth({
         const token = (ctx.context.newSession?.user as { token?: unknown } | undefined)
           ?.token
         if (typeof token === "string" && token) {
-          ctx.setCookie(springSessionCookieName, token, {
+          ctx.setCookie(SPRING_SESSION_COOKIE_NAME, token, {
             httpOnly: true,
             sameSite: "lax",
             path: "/",
@@ -176,7 +163,7 @@ export const auth = betterAuth({
         }
       }
       if (ctx.path === "/sign-out") {
-        ctx.setCookie(springSessionCookieName, "", {
+        ctx.setCookie(SPRING_SESSION_COOKIE_NAME, "", {
           httpOnly: true,
           path: "/",
           maxAge: 0,
@@ -198,13 +185,13 @@ export const auth = betterAuth({
 
         // Step 1: GET /login 建立会话并取 CSRF token（后端未开 CSRF 时解析不到则跳过）。
         let preSessionId: string | undefined
-        let csrfToken: string | undefined
+        let preLoginCsrfToken: string | undefined
         try {
           const loginPage = await fetch(`${thirdPartyApiUrl}/login`, {
             cache: "no-store",
           })
           preSessionId = readSessionId(loginPage.headers)
-          csrfToken = readCsrfToken(await loginPage.text())
+          preLoginCsrfToken = readCsrfToken(await loginPage.text())
         } catch {
           throw new APIError("BAD_GATEWAY", {
             code: "E_INTERNAL",
@@ -217,14 +204,14 @@ export const auth = betterAuth({
           "Content-Type": "application/x-www-form-urlencoded",
         }
         if (preSessionId) {
-          headers.Cookie = `${springSessionCookieName}=${preSessionId}`
+          headers.Cookie = `${SPRING_SESSION_COOKIE_NAME}=${preSessionId}`
         }
         const body = new URLSearchParams({
           username: parsed.username,
           password: parsed.password,
         })
-        if (csrfToken) {
-          body.set("_csrf", csrfToken)
+        if (preLoginCsrfToken) {
+          body.set("_csrf", preLoginCsrfToken)
         }
 
         let res: Response
@@ -252,16 +239,25 @@ export const auth = betterAuth({
           // 优先取 POST 响应里的新 id，无则回退到 GET 阶段的 id。
           const sessionId = readSessionId(res.headers) ?? preSessionId
           if (sessionId) {
+            // 认证成功后 Spring 会轮换 CSRF token，需用新会话重新取一次；
+            // 取不到时回退登录页的旧 token（中转层遇到 403 还会再重取一次）。
+            const [permissions, refreshedCsrfToken] = await Promise.all([
+              fetchPermissions(
+                thirdPartyApiUrl,
+                permissionsApiPath,
+                sessionId,
+              ),
+              fetchCsrfToken(thirdPartyApiUrl, sessionId),
+            ])
+            const csrfToken = refreshedCsrfToken ?? preLoginCsrfToken
+
             return {
               // Better Auth 内部用 email 作为用户唯一标识；无状态模式下存 username 即可。
               email: parsed.username,
               name: parsed.username,
               token: sessionId,
-              permissions: await fetchPermissions(
-                thirdPartyApiUrl,
-                permissionsApiPath,
-                sessionId,
-              ),
+              permissions,
+              ...(csrfToken ? { csrfToken } : {}),
             }
           }
         }

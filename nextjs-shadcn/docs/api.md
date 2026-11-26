@@ -11,6 +11,7 @@
 
 - 双会话校验: Better Auth 会话存在且 `user.token` 非空，**并且** Spring session cookie（`SPRING_SESSION_COOKIE_NAME`）存在；任一缺失 → `401 E_UNAUTHORIZED`。
 - 权限校验: 会话携带的 `user.permissions`（登录时从后端 `PERMISSIONS_API_PATH`，默认 `/api/me` 拉取）需包含所需权限码；含 `*` 视为全部权限；不足 → `403 E_FORBIDDEN`。
+- CSRF: 登录成功后从登录页重新解析 `_csrf` 存入会话 `user.csrfToken`（Spring 认证后会轮换 token）；转发时作为 `X-CSRF-TOKEN` 请求头携带。写操作（POST/PUT/PATCH/DELETE）被上游 403 拒绝时，用当前会话重取一次 token 并重试一次。
 - 显式路由: `app/api/**/route.ts` 使用 `createApiHandler({ upstreamPath, permission?, validateBody? })`，一行完成上述流程。
 - 通用代理: `/api/proxy/<path>` → `${THIRD_PARTY_API_URL}/api/<path>`，复用同一套逻辑；权限按 `lib/api/permissions.ts` 的 `UPSTREAM_PERMISSIONS`（后端路径 → 权限码）判定，未登记则仅需登录。
 - 上游映射: 401 → E_UNAUTHORIZED；403 → E_FORBIDDEN；404 → E_NOT_FOUND；3xx（Spring 未认证跳转 `/login`）→ 401 E_UNAUTHORIZED；其余非 2xx → 502 E_INTERNAL。不回传上游错误细节。
@@ -37,7 +38,7 @@
 | E_FORBIDDEN | 权限不足 |
 | E_INTERNAL | 服务端内部错误（对外不暴露细节） |
 
-- 鉴权: 采用 **Better Auth**（无状态模式，session 存储于签名 cookie，无需数据库）。用户名/密码通过 `better-auth-credentials-plugin` 转发到 Spring Boot 表单登录（CSRF 开启时为"GET /login 取 `_csrf` + 会话 cookie → POST /login"两步流程），Spring 返回的 session cookie 值（名取 `SPRING_SESSION_COOKIE_NAME`）作为 sessionId 存入会话 `user.token`，并在登录成功时由 `hooks.after` 种植同名独立 HttpOnly cookie、登出时清除。
+- 鉴权: 采用 **Better Auth**（无状态模式，session 存储于签名 cookie，无需数据库）。用户名/密码通过 `better-auth-credentials-plugin` 转发到 Spring Boot 表单登录（CSRF 开启时为"GET /login 取 `_csrf` + 会话 cookie → POST /login"两步流程），Spring 返回的 session cookie 值（名取 `SPRING_SESSION_COOKIE_NAME`）作为 sessionId 存入会话 `user.token`，并在登录成功时由 `hooks.after` 种植同名独立 HttpOnly cookie、登出时清除。登录成功后重新获取的 CSRF token 存入 `user.csrfToken`，由中转层以 `X-CSRF-TOKEN` 请求头转发。
 - API 不返回页面跳转逻辑（如 `redirect: true`），跳转决策归前端/调用方。
 
 ### 响应包例外
@@ -49,7 +50,7 @@
 
 - 浏览器 → 本项目 `POST /api/get-data` → 后端 `${THIRD_PARTY_API_URL}/api/getData`。
 - 已接入共通中转层：需双会话（Better Auth + Spring）且具备 `data:read` 权限（见 `lib/api/permissions.ts`），否则 401/403。
-- 入参为 JSON 对象（页面固定发送 `{ "lobCd": 10 }`），服务端原样转发；中转层从会话读取 Spring sessionId 并作为 `Cookie` 头带给后端，复用 Spring 登录态。
+- 入参为 JSON 对象（页面固定发送 `{ "lobCd": 10 }`），服务端原样转发；中转层从会话读取 Spring sessionId 并作为 `Cookie` 头带给后端，同时带上 `X-CSRF-TOKEN` 头，复用 Spring 登录态。
 - 上游响应结构未知，统一包成 `{ "data": <上游 JSON> }`；上游非 2xx 按上文规则映射，不回传上游错误细节。
 - 前端 `/data` 页面按数组、`{ data: [...] }` 以及 `list` / `items` / `records` / `rows` / `result` / `content` 等常见包装防御性解析。
 

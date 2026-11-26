@@ -1,16 +1,18 @@
 import type { NextRequest } from "next/server"
 
 import { auth } from "@/lib/auth"
+import { SPRING_SESSION_COOKIE_NAME } from "@/lib/spring-auth"
 
 /** Spring Session cookie 名（后端使用 JSESSIONID 时由环境变量覆盖） */
-export const SESSION_COOKIE_NAME =
-  process.env.SPRING_SESSION_COOKIE_NAME?.trim() || "SESSION"
+export const SESSION_COOKIE_NAME = SPRING_SESSION_COOKIE_NAME
 
 /** API 中转层使用的服务端会话信息 */
 export type ApiSession = {
   username: string
   /** Spring Session id（用于转发给后端的 Cookie 头） */
   springSessionId: string
+  /** 后端在登录时签发的 CSRF token（用于转发给后端的 X-CSRF-TOKEN 头） */
+  csrfToken?: string
   /** 后端在登录时返回的权限码 */
   permissions: string[]
 }
@@ -51,9 +53,14 @@ export async function getApiSession(
     ? rawPermissions.filter((value): value is string => typeof value === "string")
     : []
 
+  const rawCsrfToken = (session.user as { csrfToken?: unknown }).csrfToken
+  const csrfToken =
+    typeof rawCsrfToken === "string" && rawCsrfToken ? rawCsrfToken : undefined
+
   return {
     username: session.user.name ?? session.user.email,
     springSessionId,
+    csrfToken,
     permissions,
   }
 }

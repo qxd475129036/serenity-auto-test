@@ -69,10 +69,11 @@
   - Step 1 `GET ${THIRD_PARTY_API_URL}/login`：建立会话，从 `Set-Cookie` 解析 session cookie（名取 `SPRING_SESSION_COOKIE_NAME`），并从登录页 HTML 解析 `_csrf` hidden input 值；解析不到 `_csrf` 视为后端未开启 CSRF，Step 2 不携带。
   - Step 2 `POST ${THIRD_PARTY_API_URL}/login`：`application/x-www-form-urlencoded`，携带 `Cookie: <name>=<Step 1 的 id>` 与 `username`、`password`（有 CSRF 时附带 `_csrf`），`redirect: "manual"`。
   - 成功: 302 且 `Location` 不含 `?error`；sessionId 取 POST 响应的新 `Set-Cookie`（认证成功后 Spring 默认轮换 session id），无则回退 Step 1 的 id。
+  - CSRF token: 认证成功后 Spring 会轮换 CSRF token（旧 token 失效），因此携带新 sessionId 再次 `GET /login` 解析 `_csrf` 作为后续调用的有效 token（取不到时回退 Step 1 的 token，中转层 403 时还会重取一次）。
   - 失败: `Location` 含 `?error` / 401 / 200 登录页 HTML → 统一映射为 401 `Invalid username or password`；403（如 CSRF token 缺失）与其余异常 → 502 `Malformed response from auth provider`，**绝不视为成功**。
 - Better Auth 凭据端点: `POST /api/auth/sign-in/credentials`（由 plugin 注册，body 同 inputSchema）。
 - 环境变量: `BETTER_AUTH_SECRET`、`NEXT_PUBLIC_APP_URL`、`THIRD_PARTY_API_URL`、`SPRING_SESSION_COOKIE_NAME`（默认 `SESSION`）、`PERMISSIONS_API_PATH`（默认 `/api/me`），见 `.env.local`。
-- 存储: sessionId 存于 Better Auth 会话（HttpOnly cookie）的 `user.token`，同时由 `hooks.after` 在登录成功时种同名独立 HttpOnly cookie、登出时清除；前端 JS 不可读，调用 Spring 受保护接口须经 Next 服务端读取后以 `Cookie: <name>=<id>` 转发。
+- 存储: sessionId 存于 Better Auth 会话（HttpOnly cookie）的 `user.token`，同时由 `hooks.after` 在登录成功时种同名独立 HttpOnly cookie、登出时清除；前端 JS 不可读，调用 Spring 受保护接口须经 Next 服务端读取后以 `Cookie: <name>=<id>` 转发。CSRF token 存于会话 `user.csrfToken`，由 API 中转层以 `X-CSRF-TOKEN` 请求头转发。
 - 权限: 登录成功后额外请求后端用户信息接口（`PERMISSIONS_API_PATH`，默认 `/api/me`），宽松提取 `permissions` / `authorities` / `roles` 写入会话的 `user.permissions`，供 API 共通中转层做权限校验；拉取失败不阻断登录，权限为 `[]`。
 
 ## 风险与依赖
@@ -89,6 +90,7 @@
 - 2026-11: 登录页移除返回按钮、记住我、忘记密码占位入口，简化表单。
 - 2026-11: 接入真实 Spring Boot + Spring Security 表单登录：callback 改为 form-urlencoded 并解析 `Set-Cookie: SESSION`；sessionId 仅存 HttpOnly cookie，不落 localStorage。
 - 2026-11: 适配后端开启 CSRF 的场景：登录改为"GET /login 取 `_csrf` 与同会话 cookie → POST 携带"两步流程；修复无 `_csrf` 时后端 403 被误判为登录成功的 bug；登录成功后由 `hooks.after` 额外种植同名独立 HttpOnly cookie（DevTools 可见），登出时清除。
+- 2026-11: 登录成功后重新获取 CSRF token（Spring 认证后会轮换）存入会话 `user.csrfToken`；API 中转层每次转发携带 `X-CSRF-TOKEN` 头，写操作遇 403 时重取一次并重试。
 
 ## 开放问题
 
